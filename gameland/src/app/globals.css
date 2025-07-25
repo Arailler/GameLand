@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --color-background: #f9fafb;
+  --color-surface: #ffffff;
+  --color-primary: #1d4ed8;
+  --color-accent: #10b981;
+  --color-text: #1f2937;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-warning: #f59e0b;
+  --font-heading: "Permanent Marker", cursive;
+  --font-body: "Inter", sans-serif;
+}
+
+.dark {
+  --color-background: #1f2937;
+  --color-surface: #111827;
+  --color-primary: #1d4ed8;
+  --color-accent: #34d399;
+  --color-text: #f3f4f6;
+  --color-muted: #9ca3af;
+  --color-border: #374151;
+  --color-warning: #fbbf24;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
