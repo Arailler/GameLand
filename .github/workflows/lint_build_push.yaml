@@ -1,0 +1,116 @@
+name: GameLand image lint & build & push on main branch
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/gameland
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: gameland
+
+
+      - name: Lint
+        run: npm run lint
+        working-directory: gameland
+
+
+      - name: Build
+        run: npm run build
+        working-directory: gameland
+
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from PR title
+        id: version
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" == *"[patch]"* ]]; then
+            echo "type=patch" >> $GITHUB_OUTPUT
+          elif [[ "$TITLE" == *"[minor]"* ]]; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          elif [[ "$TITLE" == *"[major]"* ]]; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT  # default
+          fi
+
+      - name: Generate Docker image tag
+        id: tag
+        run: |
+          VERSION_FILE=version.txt
+          [ ! -f $VERSION_FILE ] && echo "1.0.0" > $VERSION_FILE
+          CURRENT_VERSION=$(cat $VERSION_FILE)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          case "${{ steps.version.outputs.type }}" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH+1)) ;;
+          esac
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "$NEW_VERSION" > $VERSION_FILE
+          echo "tag=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE_NAME:${{ steps.tag.outputs.tag }} .
+        working-directory: gameland
+
+      - name: Install docker-slim
+        run: |
+          wget https://github.com/slimtoolkit/slim/releases/latest/download/docker-slim_linux.tar.gz
+          tar -xzf docker-slim_linux.tar.gz
+          sudo mv docker-slim /usr/local/bin/
+          docker-slim --version
+
+      - name: Minify Docker image with docker-slim
+        run: |
+          docker-slim build \
+            --target $IMAGE_NAME:${{ steps.tag.outputs.tag }} \
+            --include-path /app/node_modules/next/dist/compiled/cookie \
+            --include-path /app/public/ \
+            --include-path /app/.next/
+
+      - name: Tag slim image as version and latest
+        run: |
+          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:latest
+
+      - name: Push Docker images
+        run: |
+          docker push $IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          docker push $IMAGE_NAME:latest
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add version.txt
+          git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
+          git push
+        working-directory: gameland
