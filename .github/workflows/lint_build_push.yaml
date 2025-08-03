@@ -84,10 +84,8 @@ jobs:
 
       - name: Install docker-slim
         run: |
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/slimtoolkit/slim/releases/latest \
-            | grep browser_download_url \
-            | grep linux_x86_64 \
-            | cut -d '"' -f 4)
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/slimtoolkit/slim/releases/latest | grep browser_download_url | grep linux_x86_64 | cut -d '"' -f 4)
+          echo "Téléchargement depuis: $DOWNLOAD_URL"
           curl -L "$DOWNLOAD_URL" -o docker-slim.tar.gz
           tar -xzf docker-slim.tar.gz
           sudo mv docker-slim/docker-slim /usr/local/bin/
