@@ -19,13 +19,21 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+        working-directory: gameland
+
 
       - name: Run linter
         run: npm run lint
+        working-directory: gameland
+
 
       - name: Build the project
         run: npm run build
+        working-directory: gameland
+
 
       - name: Run tests
         run: npm test
+        working-directory: gameland
+
