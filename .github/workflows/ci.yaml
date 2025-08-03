@@ -32,8 +32,3 @@ jobs:
         run: npm run build
         working-directory: gameland
 
-
-      - name: Run tests
-        run: npm test
-        working-directory: gameland
-

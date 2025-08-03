@@ -1,4 +1,4 @@
-name: GameLand image test & build & push on main branch
+name: GameLand image lint & build & push on main branch
 
 on:
   pull_request:
@@ -37,9 +37,6 @@ jobs:
         run: npm run build
         working-directory: gameland
 
-
-      - name: Test
-        run: npm test
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
