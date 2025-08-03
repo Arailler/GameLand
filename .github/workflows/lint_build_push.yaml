@@ -79,6 +79,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t $IMAGE_NAME:${{ steps.tag.outputs.tag }} .
+        working-directory: gameland
 
       - name: Install docker-slim
         run: |
@@ -112,3 +113,4 @@ jobs:
           git add version.txt
           git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
           git push
+        working-directory: gameland
