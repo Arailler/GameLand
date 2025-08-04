@@ -18,7 +18,7 @@ jobs:
     env:
       WORKING_DIRECTORY: gameland
       IMAGE_NAME: gameland
-      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME
+      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/gameland
       NODE_VERSION: 22
 
     steps:
@@ -34,16 +34,13 @@ jobs:
         run: npm ci
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
-
       - name: Lint
         run: npm run lint
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
-
       - name: Build
         run: npm run build
         working-directory: ${{ env.WORKING_DIRECTORY }}
-
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -65,22 +62,12 @@ jobs:
             echo "type=patch" >> $GITHUB_OUTPUT  # default
           fi
 
-      - name: Generate Docker image tag
+      - name: Bump version and extract new tag
         id: tag
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
-          VERSION_FILE=version.txt
-          [ ! -f $VERSION_FILE ] && echo "1.0.0" > $VERSION_FILE
-          CURRENT_VERSION=$(cat $VERSION_FILE)
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-
-          case "${{ steps.version.outputs.type }}" in
-            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH+1)) ;;
-          esac
-
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          echo "$NEW_VERSION" > $VERSION_FILE
+          npm version ${{ steps.version.outputs.type }} --no-git-tag-version
+          NEW_VERSION=$(jq -r .version package.json)
           echo "tag=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
@@ -108,10 +95,11 @@ jobs:
           docker push ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           docker push ${{ env.HUB_IMAGE_NAME }}:latest
 
-      - name: Commit version bump
+      - name: Commit bumped version
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add version.txt
+          git add package.json package-lock.json
           git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
