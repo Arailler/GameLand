@@ -2,13 +2,11 @@ name: GameLand image lint & build & push on main branch
 
 on:
   pull_request:
-    types: [closed]
     branches:
       - main
 
 jobs:
   build-and-push:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: Production
 
@@ -78,17 +76,17 @@ jobs:
           echo "tag=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
-        run: |
-          docker build -t $IMAGE_NAME:${{ steps.tag.outputs.tag }} .
+        uses: docker/build-push-action@v4
+        with:
+          push: false
+          tags: $IMAGE_NAME:${{ steps.tag.outputs.tag }}
         working-directory: gameland
 
       - name: Install docker-slim
         run: |
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/slimtoolkit/slim/releases/latest | grep browser_download_url | grep linux_x86_64 | cut -d '"' -f 4)
-          echo "Téléchargement depuis: $DOWNLOAD_URL"
-          curl -L "$DOWNLOAD_URL" -o docker-slim.tar.gz
-          tar -xzf docker-slim.tar.gz
-          sudo mv docker-slim/docker-slim /usr/local/bin/
+          wget https://github.com/slimtoolkit/slim/releases/latest/download/docker-slim_linux.tar.gz
+          tar -xzf docker-slim_linux.tar.gz
+          sudo mv docker-slim /usr/local/bin/
           docker-slim --version
 
       - name: Minify Docker image with docker-slim
