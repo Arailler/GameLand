@@ -2,13 +2,11 @@ name: GameLand image lint & build & push on main branch
 
 on:
   pull_request:
-    types: [closed]
     branches:
       - main
 
 jobs:
   build-and-push:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: Production
 
