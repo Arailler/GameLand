@@ -2,11 +2,13 @@ name: GameLand image lint & build & push on main branch
 
 on:
   pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   build-and-push:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: Production
 
@@ -102,3 +104,12 @@ jobs:
         run: |
           docker push ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           docker push ${{ env.HUB_IMAGE_NAME }}:latest
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add version.txt
+          git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
+          git push
+        working-directory: ${{ env.WORKING_DIRECTORY }}
