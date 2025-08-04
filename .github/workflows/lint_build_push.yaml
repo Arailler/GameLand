@@ -81,12 +81,12 @@ jobs:
         with:
           context: gameland
           push: false
-          tags: $IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
 
       - name: Minify Docker image with docker-slim
         uses: kitabisa/docker-slim-action@v1
         with:
-          target: gameland:${{ steps.tag.outputs.tag }}
+          target: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           tag: ${{ steps.tag.outputs.tag }}-slim
 
       - name: Tag slim image as version and latest
