@@ -79,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: $IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          tags: ${{ IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
 
       - name: Install docker-slim
         run: |
