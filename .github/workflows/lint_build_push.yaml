@@ -82,20 +82,11 @@ jobs:
           push: false
           tags: gameland:${{ steps.tag.outputs.tag }}
 
-      - name: Install docker-slim
-        run: |
-          wget https://github.com/slimtoolkit/slim/releases/latest/download/docker-slim_linux.tar.gz
-          tar -xzf docker-slim_linux.tar.gz
-          sudo mv docker-slim /usr/local/bin/
-          docker-slim --version
-
       - name: Minify Docker image with docker-slim
-        run: |
-          docker-slim build \
-            --target $IMAGE_NAME:${{ steps.tag.outputs.tag }} \
-            --include-path /app/node_modules/next/dist/compiled/cookie \
-            --include-path /app/public/ \
-            --include-path /app/.next/
+        uses: kitabisa/docker-slim-action@v1
+        with:
+          target: gameland:${{ steps.tag.outputs.tag }}
+          tag: ${{ steps.tag.outputs.tag }}-slim
 
       - name: Tag slim image as version and latest
         run: |
@@ -106,12 +97,3 @@ jobs:
         run: |
           docker push $IMAGE_NAME:${{ steps.tag.outputs.tag }}
           docker push $IMAGE_NAME:latest
-
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add version.txt
-          git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
-          git push
-        working-directory: gameland
