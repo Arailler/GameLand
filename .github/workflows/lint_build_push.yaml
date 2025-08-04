@@ -11,7 +11,8 @@ jobs:
     environment: Production
 
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/gameland
+      IMAGE_NAME: gameland
+      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME
 
     steps:
       - name: Checkout code
@@ -80,7 +81,7 @@ jobs:
         with:
           context: gameland
           push: false
-          tags: gameland:${{ steps.tag.outputs.tag }}
+          tags: $IMAGE_NAME:${{ steps.tag.outputs.tag }}
 
       - name: Minify Docker image with docker-slim
         uses: kitabisa/docker-slim-action@v1
@@ -91,10 +92,10 @@ jobs:
       - name: Tag slim image as version and latest
         run: |
           docker images
-          docker tag gameland:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:${{ steps.tag.outputs.tag }}
-          docker tag gameland:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:latest
+          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $HUB_IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $HUB_IMAGE_NAME:latest
 
       - name: Push Docker images
         run: |
-          docker push $IMAGE_NAME:${{ steps.tag.outputs.tag }}
-          docker push $IMAGE_NAME:latest
+          docker push $HUB_IMAGE_NAME:${{ steps.tag.outputs.tag }}
+          docker push $HUB_IMAGE_NAME:latest
