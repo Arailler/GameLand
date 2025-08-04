@@ -13,7 +13,10 @@ jobs:
     environment: Production
 
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/gameland
+      WORKING_DIRECTORY: gameland
+      IMAGE_NAME: gameland
+      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME
+      NODE_VERSION: 22
 
     steps:
       - name: Checkout code
@@ -22,21 +25,21 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
         run: npm ci
-        working-directory: gameland
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
 
       - name: Lint
         run: npm run lint
-        working-directory: gameland
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
 
       - name: Build
         run: npm run build
-        working-directory: gameland
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
 
       - name: Log in to Docker Hub
@@ -78,36 +81,29 @@ jobs:
           echo "tag=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
-        run: |
-          docker build -t $IMAGE_NAME:${{ steps.tag.outputs.tag }} .
-        working-directory: gameland
-
-      - name: Install docker-slim
-        run: |
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/slimtoolkit/slim/releases/latest | grep browser_download_url | grep linux_x86_64 | cut -d '"' -f 4)
-          echo "Téléchargement depuis: $DOWNLOAD_URL"
-          curl -L "$DOWNLOAD_URL" -o docker-slim.tar.gz
-          tar -xzf docker-slim.tar.gz
-          sudo mv docker-slim/docker-slim /usr/local/bin/
-          docker-slim --version
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ env.WORKING_DIRECTORY }}
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
 
       - name: Minify Docker image with docker-slim
-        run: |
-          docker-slim build \
-            --target $IMAGE_NAME:${{ steps.tag.outputs.tag }} \
-            --include-path /app/node_modules/next/dist/compiled/cookie \
-            --include-path /app/public/ \
-            --include-path /app/.next/
+        uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
+        with:
+          target: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          tag: ${{ steps.tag.outputs.tag }}-slim
 
       - name: Tag slim image as version and latest
         run: |
-          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:${{ steps.tag.outputs.tag }}
-          docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:latest
+          docker tag ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          docker tag ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:latest
 
       - name: Push Docker images
         run: |
-          docker push $IMAGE_NAME:${{ steps.tag.outputs.tag }}
-          docker push $IMAGE_NAME:latest
+          docker push ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          docker push ${{ env.HUB_IMAGE_NAME }}:latest
 
       - name: Commit version bump
         run: |
@@ -116,4 +112,4 @@ jobs:
           git add version.txt
           git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
           git push
-        working-directory: gameland
+        working-directory: ${{ env.WORKING_DIRECTORY }}
