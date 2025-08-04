@@ -85,6 +85,8 @@ jobs:
 
       - name: Minify Docker image with docker-slim
         uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
         with:
           target: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           tag: ${{ steps.tag.outputs.tag }}-slim
