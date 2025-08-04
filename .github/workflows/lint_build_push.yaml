@@ -112,4 +112,3 @@ jobs:
           git add version.txt
           git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
           git push
-        working-directory: ${{ env.WORKING_DIRECTORY }}
