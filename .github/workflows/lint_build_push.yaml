@@ -115,3 +115,4 @@ jobs:
           git add version.txt
           git commit -m "Bump version to ${{ steps.tag.outputs.tag }}"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:${{ github.ref_name }}
+
