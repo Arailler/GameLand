@@ -90,6 +90,7 @@ jobs:
 
       - name: Tag slim image as version and latest
         run: |
+          docker images
           docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:${{ steps.tag.outputs.tag }}
           docker tag $IMAGE_NAME:${{ steps.tag.outputs.tag }}-slim $IMAGE_NAME:latest
 
