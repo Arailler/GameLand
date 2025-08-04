@@ -79,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: ${{ github.repository }}:${{ steps.tag.outputs.tag }}
+          tags: gameland:${{ steps.tag.outputs.tag }}
 
       - name: Install docker-slim
         run: |
