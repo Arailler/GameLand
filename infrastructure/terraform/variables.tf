@@ -1,7 +1,6 @@
 variable "name" {
   description = "Name of the application"
   type        = string
-  default     = "gameland"
 }
 
 variable "control_plane_count" {
