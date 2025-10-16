@@ -1,10 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: prometheus-ingress
+  name: prometheus-traefik-ingress
   namespace: monitoring
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    kubernetes.io/ingress.class: traefik
 spec:
   rules:
   - http:
@@ -13,6 +13,6 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: prometheus
+              name: kube-prometheus-stack-prometheus
               port:
                 number: 9090

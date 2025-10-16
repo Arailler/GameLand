@@ -8,7 +8,7 @@ all:
     bastion:
       hosts:
         bastion_host:
-          ansible_host: 18.185.77.9
+          ansible_host: 18.185.96.148
     k3s:
       vars:
         ansible_ssh_common_args: >-
@@ -19,12 +19,12 @@ all:
         control_plane:
           hosts:
             cp-k3s:
-              ansible_host: 10.0.3.7
+              ansible_host: 10.0.3.130
         workers:
           hosts:
             wk-k3s:
-              ansible_host: 10.0.6.117
+              ansible_host: 10.0.6.139
         database:
           hosts:
             db-k3s:
-              ansible_host: 10.0.8.197
+              ansible_host: 10.0.8.9
