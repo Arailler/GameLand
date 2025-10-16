@@ -1,0 +1,14 @@
+---
+- name: Label nodes according to their role
+  hosts: workers:database
+  become: true
+  tasks:
+    - name: Set label role=worker for workers
+      command: kubectl --kubeconfig {{ kubeconfig_path }} label node {{ ansible_hostname }} role=worker --overwrite
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      when: "'workers' in group_names"
+      
+    - name: Set label role=database for database nodes
+      command: kubectl --kubeconfig {{ kubeconfig_path }} label node {{ ansible_hostname }} role=database --overwrite
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      when: "'database' in group_names"

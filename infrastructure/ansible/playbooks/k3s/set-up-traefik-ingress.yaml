@@ -1,0 +1,45 @@
+---
+- name: Set up all Traefik ingresses
+  hosts: control_plane[0]
+  become: false
+  vars:
+    gameland_manifest: gameland-traefik-ingress.yaml
+    gameland_manifest_destination: "/home/{{ ansible_user }}/{{ gameland_manifest }}"
+    prometheus_manifest: prometheus-traefik-ingress.yaml
+    prometheus_manifest_destination: "/home/{{ ansible_user }}/{{ prometheus_manifest }}"
+    grafana_manifest: grafana-traefik-ingress.yaml
+    grafana_manifest_destination: "/home/{{ ansible_user }}/{{ grafana_manifest }}"
+    
+  tasks:
+    - name: Copy Gameland Traefik ingress manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/gameland/{{ gameland_manifest }}"
+        dest: "{{ gameland_manifest_destination }}"
+
+    - name: Apply Gameland Traefik ingress manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ gameland_manifest_destination }}
+      register: gameland_traefik_ingress_apply
+      changed_when: "'created' in gameland_traefik_ingress_apply.stdout or 'configured' in gameland_traefik_ingress_apply.stdout"
+
+    - name: Copy Prometheus Traefik ingress manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ prometheus_manifest }}"
+        dest: "{{ prometheus_manifest_destination }}"
+
+    - name: Apply Prometheus Traefik ingress manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ prometheus_manifest_destination }}
+      register: prometheus_traefik_ingress_apply
+      changed_when: "'created' in prometheus_traefik_ingress_apply.stdout or 'configured' in prometheus_traefik_ingress_apply.stdout"
+
+    - name: Copy Grafana Traefik ingress manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ grafana_manifest }}"
+        dest: "{{ grafana_manifest_destination }}"
+
+    - name: Apply Grafana Traefik ingress manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ grafana_manifest_destination }}
+      register: grafana_traefik_ingress_apply
+      changed_when: "'created' in grafana_traefik_ingress_apply.stdout or 'configured' in grafana_traefik_ingress_apply.stdout"

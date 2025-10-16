@@ -1,0 +1,6 @@
+CREATE USER exporter WITH PASSWORD 'exporterpass';
+ALTER USER exporter SET SEARCH_PATH TO public, pg_catalog;
+GRANT CONNECT ON DATABASE gameland TO exporter;
+GRANT USAGE ON SCHEMA public TO exporter;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO exporter;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO exporter;

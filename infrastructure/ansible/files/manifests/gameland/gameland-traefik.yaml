@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gameland-router
+  namespace: gameland
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: PathPrefix(`/gameland`)
+      kind: Rule
+      services:
+        - name: svc-gameland
+          port: 80

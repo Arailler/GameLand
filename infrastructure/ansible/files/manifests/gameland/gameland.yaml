@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gameland
+  labels:
+    prometheus: enabled
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gameland-secret
+  namespace: gameland
+type: Opaque
+data:
+  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzQHBvc3RncmVzLTAucG9zdGdyZXMucG9zdGdyZXMuc3ZjLmNsdXN0ZXIubG9jYWw6NTQzMi9nYW1lbGFuZA==
+  NEXTAUTH_SECRET: L25udVFHSGthbGJ2N2RDWXFGdVh4V295MSszNXRadHY0TE9pZDFLZTNUVVE9
+  GMAIL_USER: cmVzZXJ2ZWdwQGdtYWlsLmNvbQ==
+  GMAIL_APP_PASSWORD: dXRpayBpYXVqIHhpcmYgYmRhaQ==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gameland
+  namespace: gameland
+  labels:
+    app: gameland
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gameland
+  template:
+    metadata:
+      labels:
+        app: gameland
+    spec:
+      nodeSelector:
+        role: worker
+      containers:
+        - name: gameland
+          image: arailler/gameland:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: gameland-secret
+                  key: DATABASE_URL
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gameland-secret
+                  key: NEXTAUTH_SECRET
+            - name: GMAIL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gameland-secret
+                  key: GMAIL_USER
+            - name: GMAIL_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gameland-secret
+                  key: GMAIL_APP_PASSWORD
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gameland-hpa
+  namespace: gameland
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gameland
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

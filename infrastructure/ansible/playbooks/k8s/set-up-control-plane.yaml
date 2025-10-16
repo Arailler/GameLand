@@ -1,0 +1,66 @@
+---
+- name: Set up K8s Control Plane
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Initialize Kubernetes cluster
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket=/run/containerd/containerd.sock
+      args:
+        creates: "{{ admin_config }}"
+
+    - name: Create .kube directory
+      file:
+        path: "{{ kubeconfig_dir }}"
+        state: directory
+        mode: 0755
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Copy admin.conf to user kube config
+      copy:
+        src: "{{ admin_config }}"
+        dest: "{{ kubeconfig_path }}"
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 0644
+
+    - name: Ensure kubectl alias in bashrc
+      lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: "alias k=kubectl"
+        state: present
+
+    - name: Install Flannel CNI
+      become_user: "{{ ansible_user }}"
+      shell: kubectl --kubeconfig {{ kubeconfig_path }} apply -f https://github.com/flannel-io/flannel/releases/download/v{{ flannel_version }}/kube-flannel.yml
+      when: cni == "flannel"
+
+    - name: Install Calico CNI
+      become_user: "{{ ansible_user }}"
+      shell: kubectl --kubeconfig {{ kubeconfig_path }} apply -f https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/calico.yaml
+      when: cni == "calico"
+
+    - name: Wait until all kube-system pods are 100% ready
+      become_user: "{{ ansible_user }}"
+      shell: |
+        set -e
+        for i in $(seq 1 60); do
+          not_ready=$(kubectl get pods --kubeconfig {{ kubeconfig_path }} -n kube-system -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.containerStatuses[*]}{.ready}{" "}{end}{"\n"}{end}' \
+            | awk '{for(i=2;i<=NF;i++){if($i!="true") print $1}}' | wc -l)
+          if [ "$not_ready" -eq 0 ]; then
+            echo "All pods are 100% ready"
+            exit 0
+          fi
+          echo "Waiting for pods to be 100% ready..."
+          sleep 10
+        done
+        echo "Timeout waiting for all kube-system pods to be 100% ready"
+        exit 1
+
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+        

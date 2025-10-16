@@ -1,0 +1,136 @@
+---
+- name: Set up Prometheus & Grafana stack
+  hosts: control_plane[0]
+  become: true
+  vars:
+    monitoring_namespace: monitoring
+    postgres_namespace: postgres
+    prometheus_grafana_values_file: prometheus-grafana-values.yaml
+    prometheus_grafana_values_file_destination: "/home/{{ ansible_user }}/{{ prometheus_grafana_values_file }}"
+    helm_release_name: kube-prometheus-stack
+    postgres_exporter_manifest: postgres-exporter.yaml
+    postgres_exporter_manifest_destination: "/home/{{ ansible_user }}/{{ postgres_exporter_manifest }}"
+    postgres_exporter_script: set-up-postgres-exporter.sql
+    postgres_exporter_script_destination: "/home/{{ ansible_user }}/{{ postgres_exporter_script }}"
+    dashboard_1860: dashboard_1860.json
+    dashboard_1860_destination: "/home/{{ ansible_user }}/{{ dashboard_1860 }}"
+    dashboard_9628: dashboard_9628.json
+    dashboard_9628_destination: "/home/{{ ansible_user }}/{{ dashboard_9628 }}"
+    dashboard_13499: dashboard_13499.json
+    dashboard_13499_destination: "/home/{{ ansible_user }}/{{ dashboard_13499 }}"
+    dashboard_15757: dashboard_15757.json
+    dashboard_15757_destination: "/home/{{ ansible_user }}/{{ dashboard_15757 }}"
+    dashboards:
+      - { name: prometheus-grafana-node-exporter-dashboard, file: "{{ dashboard_1860_destination }}" }
+      - { name: prometheus-grafana-kubernetes-global-dashboard, file: "{{ dashboard_15757_destination }}" }
+      - { name: prometheus-grafana-kubernetes-pods-dashboard, file: "{{ dashboard_13499_destination }}" }
+      - { name: prometheus-grafana-postgresql-dashboard, file: "{{ dashboard_9628_destination }}" }
+    postgres_pod: postgres-0
+    prometheus_nodeport_manifest: prometheus-nodeport.yaml
+    prometheus_nodeport_manifest_destination: "/home/{{ ansible_user }}/{{ prometheus_nodeport_manifest }}"
+    grafana_nodeport_manifest: grafana-nodeport.yaml
+    grafana_nodeport_manifest_destination: "/home/{{ ansible_user }}/{{ grafana_nodeport_manifest }}"
+
+  tasks:
+    - name: Add Prometheus Helm repo
+      shell: |
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo update
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Copy Prometheus Grafana settings file
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ prometheus_grafana_values_file }}"
+        dest: "{{ prometheus_grafana_values_file_destination }}"
+
+    - name: Install Kube Prometheus Stack on worker nodes
+      shell: |
+        helm install {{ helm_release_name }} prometheus-community/{{ helm_release_name }} \
+          -n {{ monitoring_namespace }} --create-namespace \
+          -f {{ prometheus_grafana_values_file_destination }}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: helm_install
+      changed_when: "'installed' in helm_install.stdout or 'deployed' in helm_install.stdout"
+
+    - name: Wait for kube-prometheus-stack-operator rollout
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} rollout status deployment/{{ helm_release_name }}-operator -n {{ monitoring_namespace }} --timeout=180s
+      register: operator_rollout
+      changed_when: false
+
+    - name: Wait for kube-state-metrics rollout
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} rollout status deployment/{{ helm_release_name }}-kube-state-metrics -n {{ monitoring_namespace }} --timeout=180s
+      register: ksm_rollout
+      changed_when: false
+
+    - name: Wait for Grafana rollout
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} rollout status deployment/{{ helm_release_name }}-grafana -n {{ monitoring_namespace }} --timeout=180s
+      register: grafana_rollout
+      changed_when: false
+
+    - name: Copy Postgres exporter manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/postgres/{{ postgres_exporter_manifest }}"
+        dest: "{{ postgres_exporter_manifest_destination }}"
+
+    - name: Apply Postgres Exporter manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ postgres_exporter_manifest_destination }}
+      register: pg_exporter_apply
+      changed_when: "'created' in pg_exporter_apply.stdout or 'configured' in pg_exporter_apply.stdout"
+
+    - name: Wait for Postgres Exporter rollout
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} rollout status deployment/postgres-exporter -n {{ postgres_namespace }} --timeout=180s
+      register: pg_exporter_rollout
+      changed_when: false
+
+    - name: Copy Postgres exporter script
+      copy:
+        src: "{{ playbook_dir }}/../../files/sql/{{ postgres_exporter_script }}"
+        dest: "{{ postgres_exporter_script_destination }}"
+
+    - name: Copy SQL file to Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} -n {{ postgres_namespace }} cp {{ postgres_exporter_script_destination }} {{ postgres_pod }}:/{{ postgres_exporter_script }}
+    
+    - name: Execute SQL file in Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} exec -n {{ postgres_namespace }} {{ postgres_pod }} -- psql -U postgres -d gameland -f {{ postgres_exporter_script }}
+
+    - name: Remove SQL file from Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} exec -n {{ postgres_namespace }} {{ postgres_pod }} -- rm {{ postgres_exporter_script }}
+
+    - name: Copy dashboard 1860
+      copy:
+        src: "{{ playbook_dir }}/../../files/grafana_dashboards/{{ dashboard_1860 }}"
+        dest: "{{ dashboard_1860_destination }}"
+
+    - name: Copy dashboard 15757
+      copy:
+        src: "{{ playbook_dir }}/../../files/grafana_dashboards/{{ dashboard_15757 }}"
+        dest: "{{ dashboard_15757_destination }}"
+
+    - name: Copy dashboard 13499
+      copy:
+        src: "{{ playbook_dir }}/../../files/grafana_dashboards/{{ dashboard_13499 }}"
+        dest: "{{ dashboard_13499_destination }}"
+
+    - name: Copy dashboard 9628
+      copy:
+        src: "{{ playbook_dir }}/../../files/grafana_dashboards/{{ dashboard_9628 }}"
+        dest: "{{ dashboard_9628_destination }}"
+    
+    - name: Create Grafana ConfigMaps for dashboards
+      loop: "{{ dashboards }}"
+      loop_control:
+        loop_var: dashboard
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} create configmap {{ dashboard.name }} \
+          --from-file={{ dashboard.file }} -n {{ monitoring_namespace }}
+        kubectl --kubeconfig {{ kubeconfig_path }} label configmap {{ dashboard.name }} grafana_dashboard=1 -n {{ monitoring_namespace }} --overwrite
