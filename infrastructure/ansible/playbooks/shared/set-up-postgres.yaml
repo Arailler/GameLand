@@ -1,0 +1,65 @@
+---
+- name: Set up Postgres components
+  hosts: control_plane[0]
+  become: true
+  vars:
+    postgres_namespace: postgres
+    manifest_file: postgres.yaml
+    manifest_file_destination: "/home/{{ ansible_user }}/{{ manifest_file }}"
+    statefulset_name: postgres
+
+  tasks:
+    - name: Copy postgres.yaml manifest to control plane
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/postgres/{{ manifest_file }}"
+        dest: "{{ manifest_file_destination }}"
+
+    - name: Apply Postgres manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ manifest_file_destination }}
+      register: apply_output
+      changed_when: "'created' in apply_output.stdout or 'configured' in apply_output.stdout"
+
+    - name: Wait for Postgres statefulset rollout
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} rollout status statefulset {{ statefulset_name }} -n {{ postgres_namespace }} --timeout=180s
+      register: rollout_status
+      changed_when: false
+
+    - name: Show rollout status
+      debug:
+        msg: "{{ rollout_status.stdout }}"
+
+- name: Populate Postgres database
+  hosts: control_plane[0]
+  become: true
+  vars:
+    kubernetes: "k8s"
+    postgres_namespace: postgres
+    statefulset_name: postgres
+    sql_file: fill-gameland-postgres.sql
+    sql_file_destination: "/home/{{ ansible_user }}/{{ sql_file }}"
+
+  tasks:
+    - name: Copy SQL file to control plane
+      copy:
+        src: "{{ playbook_dir }}/../../files/sql/{{ sql_file }}"
+        dest: "{{ sql_file_destination }}"
+
+    - name: Get Postgres pod name
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} -n {{ postgres_namespace }} get pods -l app={{ statefulset_name }} -o jsonpath='{.items[0].metadata.name}'
+      register: pod_name
+      changed_when: false
+
+    - name: Copy SQL file to Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} -n {{ postgres_namespace }} cp {{ sql_file_destination }} {{ pod_name.stdout }}:/{{ sql_file }}
+
+    - name: Execute SQL file in Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} -n {{ postgres_namespace }} exec {{ pod_name.stdout }} -- psql -U postgres -d gameland -f /{{ sql_file }}
+
+    - name: Remove SQL file from Postgres pod
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} -n {{ postgres_namespace }} exec {{ pod_name.stdout }} -- rm /{{ sql_file }}

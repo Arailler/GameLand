@@ -1,0 +1,32 @@
+---
+- name: Set up Prometheus and Grafana NodePort services
+  hosts: control_plane[0]
+  become: false
+  vars:
+    prometheus_manifest: prometheus-nodeport.yaml
+    prometheus_manifest_destination: "/home/{{ ansible_user }}/{{ prometheus_manifest }}"
+    grafana_manifest: grafana-nodeport.yaml
+    grafana_manifest_destination: "/home/{{ ansible_user }}/{{ grafana_manifest }}"
+    
+  tasks:
+    - name: Copy Prometheus nodeport manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ prometheus_manifest }}"
+        dest: "{{ prometheus_manifest_destination }}"
+
+    - name: Apply Prometheus nodeport manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ prometheus_manifest_destination }}
+      register: prometheus_nodeport_apply
+      changed_when: "'created' in prometheus_nodeport_apply.stdout or 'configured' in prometheus_nodeport_apply.stdout"
+
+    - name: Copy Grafana nodeport manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ grafana_manifest }}"
+        dest: "{{ grafana_manifest_destination }}"
+
+    - name: Apply Grafana nodeport manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ grafana_manifest_destination }}
+      register: grafana_nodeport_apply
+      changed_when: "'created' in grafana_nodeport_apply.stdout or 'configured' in grafana_nodeport_apply.stdout"

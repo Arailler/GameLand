@@ -1,0 +1,37 @@
+all:
+  vars:
+    ansible_user: admin
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa_gameland
+    kubeconfig_dir: "/home/{{ ansible_user }}/.kube"
+    kubeconfig_path: "{{ kubeconfig_dir }}/config"
+    admin_config: /etc/kubernetes/admin.conf
+    kube_version: "1.34"
+    cni_version: "1.3.0"
+    flannel_version: "0.27.3"
+    calico_version: "3.30.3"
+    cni: "calico"
+    service_type: "clusterip"
+  children:
+    bastion:
+      hosts:
+        bastion_host:
+          ansible_host: <IP>
+    k8s:
+      vars:
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o UserKnownHostsFile=/dev/null
+          -o ProxyCommand="ssh -i ~/.ssh/id_rsa_gameland -W %h:22 bastion_host"
+      children:
+        control_plane:
+          hosts:
+            cp-k8s:
+              ansible_host: <IP>
+        workers:
+          hosts:
+            wk-k8s:
+              ansible_host: <IP>
+        database:
+          hosts:
+            db-k8s:
+              ansible_host: <IP>

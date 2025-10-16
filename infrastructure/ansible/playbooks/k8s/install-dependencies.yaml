@@ -1,0 +1,118 @@
+---
+- name: Install K8s dependencies
+  hosts: control_plane:workers:database
+  become: true
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - curl
+          - gnupg2
+          - apt-transport-https
+          - ca-certificates
+          - containerd
+        state: present
+
+    - name: Ensure containerd config directory exists
+      file:
+        path: /etc/containerd
+        state: directory
+
+    - name: Generate default containerd config
+      shell: containerd config default | tee /etc/containerd/config.toml
+
+    - name: Set CNI bin_dir in containerd config
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'bin_dir = "/usr/lib/cni"'
+        replace: 'bin_dir = "/opt/cni/bin"'
+
+    - name: Enable SystemdCgroup in containerd config
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        replace: 'SystemdCgroup = true'
+
+    - name: Restart and enable containerd
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+
+    - name: Ensure /opt/cni/bin exists
+      file:
+        path: /opt/cni/bin
+        state: directory
+        mode: 0755
+
+    - name: Download CNI plugins tarball
+      get_url:
+        url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+        dest: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+        mode: '0644'
+
+    - name: Extract CNI plugins
+      unarchive:
+        src: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+        dest: /opt/cni/bin
+        remote_src: yes
+        creates: "/opt/cni/bin/bridge"
+
+    - name: Add Kubernetes apt key
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/Release.key \
+          | gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+    - name: Add Kubernetes apt repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/ /"
+        state: present
+
+    - name: Install kubeadm, kubelet, kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: Hold kubeadm, kubelet, kubectl
+      shell: apt-mark hold kubelet kubeadm kubectl
+      changed_when: false
+
+    - name: Ensure hostname resolves locally
+      lineinfile:
+        path: /etc/hosts
+        line: "127.0.0.1 {{ ansible_hostname }}"
+        state: present
+
+    - name: Disable swap
+      shell: |
+        swapoff -a
+        sed -i '/swap/d' /etc/fstab
+
+    - name: Load kernel modules
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Configure sysctl for Kubernetes networking
+      copy:
+        dest: /etc/sysctl.d/k8s.conf
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+    - name: Reload sysctl
+      command: sysctl --system

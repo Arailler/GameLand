@@ -1,0 +1,31 @@
+---
+- name: Set up K3s Control Plane
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Install K3s
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" sh -
+      args:
+        creates: /etc/rancher/k3s/k3s.yaml
+
+    - name: Ensure KUBECONFIG is in .bashrc
+      lineinfile:
+        path: /home/{{ ansible_user }}/.bashrc
+        line: "export KUBECONFIG={{ kubeconfig_path }}"
+        state: present
+        create: yes
+
+    - name: Ensure alias k=kubectl is in .bashrc
+      lineinfile:
+        path: /home/{{ ansible_user }}/.bashrc
+        line: "alias k=kubectl"
+        state: present
+        create: yes
+    
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+    
