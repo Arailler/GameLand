@@ -5,6 +5,7 @@ module.exports = {
 }
 
 const nextConfig = {
+  basePath: '/gameland',
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
