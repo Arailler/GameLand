@@ -1,13 +1,11 @@
 resource "aws_nat_gateway" "this" {
-  count = length(var.subnet_ids)
-
-  allocation_id = var.allocation_ids[count.index]
-  subnet_id     = var.subnet_ids[count.index]
+  allocation_id = var.allocation_id
+  subnet_id     = var.subnet_id
 
   tags = merge(
     var.tags,
     {
-      Name      = "${var.name_prefix}-${count.index + 1}"
+      Name      = "${var.name}"
       Terraform = "true"
     }
   )

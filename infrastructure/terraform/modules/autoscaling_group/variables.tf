@@ -29,8 +29,9 @@ variable "launch_template_id" {
 }
 
 variable "target_group_arns" {
-  type        = list(string)
   description = "List of target group ARNs to attach to the ASG"
+  type        = list(string)
+  default     = null
 }
 
 variable "tags" {

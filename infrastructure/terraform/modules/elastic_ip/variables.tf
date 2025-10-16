@@ -1,11 +1,5 @@
-variable "elastic_ip_count" {
-  description = "Number of Elastic IPs to create"
-  type        = number
-  default     = 1
-}
-
-variable "name_prefix" {
-  description = "Prefix for Elastic IP names"
+variable "name" {
+  description = "The name for Elastic IP"
   type        = string
 }
 

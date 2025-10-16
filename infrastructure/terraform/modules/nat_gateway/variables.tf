@@ -1,15 +1,15 @@
-variable "allocation_ids" {
-  description = "List of EIP allocation IDs to attach to the NAT gateways"
-  type        = list(string)
+variable "allocation_id" {
+  description = "The EIP allocation ID to attach to the NAT gateways"
+  type        = string
 }
 
-variable "subnet_ids" {
-  description = "List of public subnet IDs where the NAT gateways will be created"
-  type        = list(string)
+variable "subnet_id" {
+  description = "The public subnet ID where the NAT gateways will be created"
+  type        = string
 }
 
-variable "name_prefix" {
-  description = "Prefix for NAT Gateway names"
+variable "name" {
+  description = "The NAT Gateway name"
   type        = string
 }
 

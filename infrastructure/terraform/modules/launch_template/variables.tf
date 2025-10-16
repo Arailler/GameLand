@@ -23,6 +23,12 @@ variable "security_group_ids" {
   description = "List of security group IDs"
 }
 
+variable "instance_profile" {
+  description = "Nom de l'instance profile IAM à attacher"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   type        = map(string)
   default     = {}
