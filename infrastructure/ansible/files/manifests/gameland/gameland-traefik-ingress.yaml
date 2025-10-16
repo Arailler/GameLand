@@ -1,18 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gameland-ingress
+  name: gameland-traefik-ingress
   namespace: gameland
   annotations:
+    kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/rule-type: PathPrefix
+    traefik.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
   - http:
       paths:
-      - path: /gameland
-        pathType: Prefix
-        backend:
-          service:
-            name: gameland
-            port:
-              number: 80
+        - path: /gameland
+          pathType: Prefix
+          backend:
+            service:
+              name: gameland
+              port:
+                number: 80
