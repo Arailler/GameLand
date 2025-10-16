@@ -6,8 +6,6 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: web
-    traefik.ingress.kubernetes.io/rule-type: PathPrefix
-    traefik.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
   - http:

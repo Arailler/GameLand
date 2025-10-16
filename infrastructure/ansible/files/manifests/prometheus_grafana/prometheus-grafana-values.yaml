@@ -1,17 +1,7 @@
 nodeSelector:
   role: worker
 ingress:
-  enabled: true
-  ingressClassName: traefik
-  hosts:
-    - paths:
-        - path: /grafana
-          pathType: Prefix
+  enabled: false
 server:
   ingress:
-    enabled: true
-    ingressClassName: traefik
-    hosts:
-      - paths:
-          - path: /prometheus
-            pathType: Prefix
+    enabled: false
