@@ -743,17 +743,17 @@ module "gameland_alb" {
   security_group_ids = [module.lb_sg.sg_id]
 }
 
-module "gameland_tg" {
+module "nginx_ingress_tg" {
   source      = "../../modules/target_group"
-  name        = "gameland-tg"
-  port        = 30000
+  name        = "nginx-ingress-tg"
+  port        = 80
   protocol    = "HTTP"
   target_type = "instance"
   vpc_id      = module.vpc.vpc_id
 
   health_check = {
     path                = "/"
-    port                = "30000"
+    port                = "80"
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 3
@@ -762,92 +762,15 @@ module "gameland_tg" {
   }
 }
 
-module "prometheus_tg" {
-  source      = "../../modules/target_group"
-  name        = "prometheus-tg"
-  port        = 30001
-  protocol    = "HTTP"
-  target_type = "instance"
-  vpc_id      = module.vpc.vpc_id
-
-  health_check = {
-    path                = "/metrics"
-    port                = "30001"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    interval            = 30
-    timeout             = 5
-  }
-}
-
-module "grafana_tg" {
-  source      = "../../modules/target_group"
-  name        = "grafana-tg"
-  port        = 30002
-  protocol    = "HTTP"
-  target_type = "instance"
-  vpc_id      = module.vpc.vpc_id
-
-  health_check = {
-    path                = "/api/health"
-    port                = "30002"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    interval            = 30
-    timeout             = 5
-  }
-}
-
-resource "aws_autoscaling_attachment" "workers_to_gameland_tg" {
-  autoscaling_group_name = module.workers_asg.asg_name
-  lb_target_group_arn    = module.gameland_tg.tg_arn
-}
-
-resource "aws_autoscaling_attachment" "workers_to_prometheus_tg" {
-  autoscaling_group_name = module.workers_asg.asg_name
-  lb_target_group_arn    = module.prometheus_tg.tg_arn
-}
-
-resource "aws_autoscaling_attachment" "workers_to_grafana_tg" {
-  autoscaling_group_name = module.workers_asg.asg_name
-  lb_target_group_arn    = module.grafana_tg.tg_arn
-}
-
-module "alb_listener_http" {
+module "gameland_alb_listener" {
   source            = "../../modules/alb_listener"
   load_balancer_arn = module.gameland_alb.lb_arn
   port              = 80
   protocol          = "HTTP"
   default_action = {
     type             = "forward"
-    target_group_arn = module.gameland_tg.tg_arn
+    target_group_arn = module.nginx_ingress_tg.tg_arn
   }
-}
-
-module "gameland_rule" {
-  source           = "../../modules/alb_listener_rule"
-  listener_arn     = module.alb_listener_http.listener_arn
-  priority         = 100
-  path_patterns    = ["/gameland/*"]
-  target_group_arn = module.gameland_tg.tg_arn
-}
-
-module "prometheus_rule" {
-  source           = "../../modules/alb_listener_rule"
-  listener_arn     = module.alb_listener_http.listener_arn
-  priority         = 110
-  path_patterns    = ["/prometheus/*"]
-  target_group_arn = module.prometheus_tg.tg_arn
-}
-
-module "grafana_rule" {
-  source           = "../../modules/alb_listener_rule"
-  listener_arn     = module.alb_listener_http.listener_arn
-  priority         = 120
-  path_patterns    = ["/grafana/*"]
-  target_group_arn = module.grafana_tg.tg_arn
 }
 
 ###########################
