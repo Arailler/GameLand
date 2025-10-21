@@ -9,8 +9,10 @@
     prometheus_manifest_destination: "/home/{{ ansible_user }}/{{ prometheus_manifest }}"
     grafana_manifest: grafana-nginx-ingress.yaml
     grafana_manifest_destination: "/home/{{ ansible_user }}/{{ grafana_manifest }}"
-    ingress_namespace: "ingress-nginx"
-    
+    nodeport_nginx_manifest: nodeport-nginx.yaml
+    nodeport_nginx_manifest_destination: "/home/{{ ansible_user }}/{{ nginx_service_manifest }}"
+    ingress_namespace: "ingress-nginx" 
+  
   tasks:
     - name: Add ingress-nginx Helm repo
       shell: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -24,12 +26,26 @@
 
     - name: Install Nginx Ingress Controller
       shell: |
-        helm install nginx-ingress ingress-nginx/ingress-nginx \
-          --namespace {{ ingress_namespace }} \
-          --create-namespace
+        helm install nginx-ingress ingress-nginx/ingress-nginx --kubeconfig {{ kubeconfig_path }} --namespace {{ ingress_namespace }} --create-namespace
       register: helm_nginx_install
       changed_when: "'STATUS: deployed' in helm_nginx_install.stdout"
-      
+
+    - name: Wait for Nginx Ingress Controller pod to be ready
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} wait pod -n {{ ingress_namespace }} \
+          -l app.kubernetes.io/name=ingress-nginx --for=condition=Ready --timeout=120s
+
+    - name: Copy nodeport Nginx ingress manifest
+      copy:
+        src: "{{ playbook_dir }}/../../files/manifests/ingress/nginx/{{ nodeport_nginx_manifest }}"
+        dest: "{{ nodeport_nginx_manifest_destination }}"
+
+    - name: Apply nodeport Nginx ingress manifest
+      shell: |
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ nodeport_nginx_manifest_destination }}
+      register: nodeport_nginx_apply
+      changed_when: "'created' in nodeport_nginx_apply.stdout or 'configured' in nodeport_nginx_apply.stdout"
+
     - name: Copy Gameland Nginx ingress manifest
       copy:
         src: "{{ playbook_dir }}/../../files/manifests/gameland/{{ gameland_manifest }}"

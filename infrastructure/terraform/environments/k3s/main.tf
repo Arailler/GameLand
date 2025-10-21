@@ -746,14 +746,14 @@ module "gameland_alb" {
 module "nginx_ingress_tg" {
   source      = "../../modules/target_group"
   name        = "nginx-ingress-tg"
-  port        = 80
+  port        = 30555
   protocol    = "HTTP"
   target_type = "instance"
   vpc_id      = module.vpc.vpc_id
 
   health_check = {
     path                = "/"
-    port                = "80"
+    port                = "traffic-port"
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 3

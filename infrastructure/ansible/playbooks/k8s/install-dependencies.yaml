@@ -2,6 +2,7 @@
 - name: Install K8s dependencies
   hosts: control_plane:workers:database
   become: true
+  
   tasks:
     - name: Update apt cache
       apt:
