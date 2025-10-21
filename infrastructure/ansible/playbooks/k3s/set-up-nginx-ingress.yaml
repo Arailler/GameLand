@@ -1,5 +1,5 @@
 ---
-- name: Set up all Traefik ingresses
+- name: Set up all Nginx ingresses
   hosts: control_plane[0]
   become: false
   vars:
