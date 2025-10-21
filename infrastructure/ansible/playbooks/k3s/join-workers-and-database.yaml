@@ -18,4 +18,4 @@
 
     - name: Install K3s agent
       shell: |
-        curl -sfL https://get.k3s.io | K3S_URL=https://{{ control_plane_ip }}:6443 K3S_TOKEN={{ k3s_token }} sh -
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ control_plane_ip }}:6443 K3S_TOKEN={{ k3s_token }} INSTALL_K3S_EXEC="--disable traefik" sh -
