@@ -12,13 +12,23 @@
     ingress_namespace: "ingress-nginx"
     
   tasks:
-    - name: Install Nginx ingress controller
+    - name: Add ingress-nginx Helm repo
+      shell: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      register: helm_add_repo
+      changed_when: "'has been added' in helm_add_repo.stdout or 'already exists' in helm_add_repo.stdout"
+
+    - name: Update Helm repos
+      shell: helm repo update
+      register: helm_repo_update
+      changed_when: "'Update Complete' in helm_repo_update.stdout"
+
+    - name: Install Nginx Ingress Controller
       shell: |
-        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-        helm repo update
         helm install nginx-ingress ingress-nginx/ingress-nginx \
-          --namespace {{ ingress_namespace}} \
+          --namespace {{ ingress_namespace }} \
           --create-namespace
+      register: helm_nginx_install
+      changed_when: "'STATUS: deployed' in helm_nginx_install.stdout"
       
     - name: Copy Gameland Nginx ingress manifest
       copy:
