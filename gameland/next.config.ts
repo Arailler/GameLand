@@ -1,9 +1,5 @@
 import type { NextConfig } from "next";
 
-module.exports = {
-  basePath: '/gameland',
-}
-
 const nextConfig = {
   basePath: '/gameland',
   productionBrowserSourceMaps: false,
