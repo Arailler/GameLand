@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
-  basePath: '/gameland',
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
