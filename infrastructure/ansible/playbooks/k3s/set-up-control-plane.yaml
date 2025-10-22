@@ -2,6 +2,7 @@
 - name: Set up K3s Control Plane
   hosts: control_plane
   become: true
+  
   tasks:
     - name: Install K3s
       shell: |

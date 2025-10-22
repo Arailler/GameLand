@@ -2,6 +2,7 @@
 - name: Label nodes according to their role
   hosts: workers:database
   become: true
+  
   tasks:
     - name: Set label role=worker for workers
       command: kubectl --kubeconfig {{ kubeconfig_path }} label node {{ ansible_hostname }} role=worker --overwrite

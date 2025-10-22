@@ -4,41 +4,19 @@
   become: true
   vars:
     gameland_namespace: gameland
-    general_manifest_file: gameland.yaml
-    general_manifest_file_destination: "/home/{{ ansible_user }}/{{ general_manifest_file }}"
-    clusterip_manifest_file: gameland-clusterip.yaml
-    clusterip_manifest_file_destination: "/home/{{ ansible_user }}/{{ clusterip_manifest_file }}"
-    nodeport_manifest_file: gameland-nodeport.yaml
-    nodeport_manifest_file_destination: "/home/{{ ansible_user }}/{{ nodeport_manifest_file }}"
+    gameland_manifest_file: gameland.yaml
+    gameland_manifest_file_destination: "/home/{{ ansible_user }}/{{ general_manifest_file }}"
     deployment_name: gameland
 
   tasks:
     - name: Copy gameland.yaml manifest to control plane
       copy:
-        src: "{{ playbook_dir }}/../../files/manifests/gameland/{{ general_manifest_file }}"
-        dest: "{{ general_manifest_file_destination }}"
+        src: "{{ playbook_dir }}/../../files/manifests/gameland/{{ gameland_manifest_file }}"
+        dest: "{{ gameland_manifest_file_destination }}"
 
     - name: Apply Gameland manifest
       shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ general_manifest_file_destination }}
-      register: apply_output
-      changed_when: "'created' in apply_output.stdout or 'configured' in apply_output.stdout"
-
-    - name: Set manifest file and destination based on service_type
-      set_fact:
-        selected_manifest_file: >-
-          {{ nodeport_manifest_file if service_type == 'nodeport' else clusterip_manifest_file }}
-        selected_manifest_file_destination: >-
-          {{ nodeport_manifest_file_destination if service_type == 'nodeport' else clusterip_manifest_file_destination }}
-
-    - name: Copy selected Gameland service manifest to control plane
-      copy:
-        src: "{{ playbook_dir }}/../../files/manifests/gameland/{{ selected_manifest_file }}"
-        dest: "{{ selected_manifest_file_destination }}"
-
-    - name: Apply selected Gameland service manifest
-      shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ selected_manifest_file_destination }}
+        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ gameland_manifest_file_destination }}
       register: apply_output
       changed_when: "'created' in apply_output.stdout or 'configured' in apply_output.stdout"
 

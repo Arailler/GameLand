@@ -2,6 +2,7 @@
 - name: Join Kubernetes Workers and Database nodes to cluster
   hosts: workers:database
   become: true
+  
   tasks:
     - name: Retrieve kubeadm join command from control plane
       command: kubeadm token create --print-join-command
