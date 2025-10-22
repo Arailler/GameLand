@@ -13,13 +13,8 @@ variable "bastion_size" {
   type        = string
 }
 
-variable "bastion_min" {
-  description = "Minimum number of bastion instances"
-  type        = number
-}
-
-variable "bastion_max" {
-  description = "Maximum number of bastion instances"
+variable "bastion_count" {
+  description = "Count of bastion instances"
   type        = number
 }
 

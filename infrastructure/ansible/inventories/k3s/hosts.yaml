@@ -3,12 +3,11 @@ all:
     ansible_user: admin
     ansible_ssh_private_key_file: ~/.ssh/id_rsa_gameland
     kubeconfig_path: "/etc/rancher/k3s/k3s.yaml"
-    service_type: "nodeport"
   children:
     bastion:
       hosts:
         bastion_host:
-          ansible_host: 63.176.49.134
+          ansible_host: 35.158.34.113
     k3s:
       vars:
         ansible_ssh_common_args: >-
@@ -18,13 +17,13 @@ all:
       children:
         control_plane:
           hosts:
-            cp-k3s:
-              ansible_host: 10.0.3.88
+            cp-1:
+              ansible_host: 10.0.3.203
         workers:
           hosts:
-            wk-k3s:
-              ansible_host: 10.0.6.48
+            wk-1:
+              ansible_host: 10.0.5.127
         database:
           hosts:
-            db-k3s:
-              ansible_host: 10.0.7.63
+            db-1:
+              ansible_host: 10.0.7.211

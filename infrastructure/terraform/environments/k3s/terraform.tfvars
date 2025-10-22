@@ -1,8 +1,7 @@
 name             = "gameland"
 bastion_ami      = "ami-0f439e819ba112bd7"
 bastion_size     = "t3.small"
-bastion_min      = 1
-bastion_max      = 1
+bastion_count    = 1
 cp_ami           = "ami-0f439e819ba112bd7"
 cp_size          = "t3.medium"
 cp_min           = 1

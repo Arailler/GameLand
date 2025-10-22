@@ -703,15 +703,6 @@ module "database_flannel_from_database" {
 }
 
 ###########################
-# Key Pairs
-###########################
-module "key_pair" {
-  source     = "../../modules/key_pair"
-  name       = "${var.name}-key"
-  public_key = file("~/.ssh/id_rsa_gameland.pub")
-}
-
-###########################
 # Application Load Balancers
 ###########################
 module "gameland_alb" {
@@ -753,19 +744,32 @@ module "gameland_alb_listener" {
 }
 
 ###########################
-# Autoscaling Groups
+# Key Pairs
 ###########################
-
-# Launch Templates
-module "bastion_lt" {
-  source             = "../../modules/launch_template"
-  name_prefix        = "${var.name}-bastion-"
-  image_id           = var.bastion_ami
-  instance_type      = var.bastion_size
-  key_name           = module.key_pair.key_name
-  security_group_ids = [module.bastion_sg.sg_id]
+module "key_pair" {
+  source     = "../../modules/key_pair"
+  name       = "${var.name}-key"
+  public_key = file("~/.ssh/id_rsa_gameland.pub")
 }
 
+###########################
+# EC2 Instances
+###########################
+module "bastion_ec2" {
+  source             = "../../modules/ec2_instance"
+  name_prefix        = "${var.name}-bastion"
+  instance_count     = var.bastion_count
+  ami                = var.bastion_ami
+  instance_type      = var.bastion_size
+  subnet_ids         = local.public_subnets_ids
+  security_group_ids = [module.bastion_sg.sg_id]
+  key_name           = module.key_pair.key_name
+}
+
+###########################
+# Autoscaling Groups
+###########################
+# Launch Templates
 module "cp_lt" {
   source             = "../../modules/launch_template"
   name_prefix        = "${var.name}-cp-"
@@ -794,16 +798,6 @@ module "db_lt" {
 }
 
 # Autoscaling Groups
-module "bastion_asg" {
-  source             = "../../modules/autoscaling_group"
-  name               = "${var.name}-bastion-asg"
-  min_size           = var.bastion_min
-  max_size           = var.bastion_max
-  desired_capacity   = var.bastion_min
-  subnet_ids         = local.public_subnets_ids
-  launch_template_id = module.bastion_lt.lt_id
-}
-
 module "cp_asg" {
   source             = "../../modules/autoscaling_group"
   name               = "${var.name}-cp-asg"
