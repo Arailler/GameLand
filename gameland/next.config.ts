@@ -1,6 +1,4 @@
 const nextConfig = {
-  basePath: '/gameland',
-  assetPrefix: '/gameland',
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
