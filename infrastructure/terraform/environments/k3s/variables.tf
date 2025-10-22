@@ -82,3 +82,8 @@ variable "db_max" {
   description = "Maximum number of database instances"
   type        = number
 }
+
+variable "ingress_nodeport" {
+  description = "Ingress NodePort of the cluster"
+  type        = number
+}

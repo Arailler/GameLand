@@ -743,10 +743,10 @@ module "gameland_alb" {
   security_group_ids = [module.lb_sg.sg_id]
 }
 
-module "nginx_ingress_tg" {
+module "ingress_tg" {
   source      = "../../modules/target_group"
-  name        = "nginx-ingress-tg"
-  port        = 30555
+  name        = "ingress-tg"
+  port        = var.ingress_nodeport
   protocol    = "HTTP"
   target_type = "instance"
   vpc_id      = module.vpc.vpc_id
@@ -769,7 +769,7 @@ module "gameland_alb_listener" {
   protocol          = "HTTP"
   default_action = {
     type             = "forward"
-    target_group_arn = module.nginx_ingress_tg.tg_arn
+    target_group_arn = module.ingress_tg.tg_arn
   }
 }
 

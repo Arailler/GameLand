@@ -10,7 +10,7 @@
     grafana_manifest: grafana-nginx-ingress.yaml
     grafana_manifest_destination: "/home/{{ ansible_user }}/{{ grafana_manifest }}"
     nodeport_nginx_manifest: nodeport-nginx.yaml
-    nodeport_nginx_manifest_destination: "/home/{{ ansible_user }}/{{ nginx_service_manifest }}"
+    nodeport_nginx_manifest_destination: "/home/{{ ansible_user }}/{{ nodeport_nginx_manifest }}"
     ingress_namespace: "ingress-nginx" 
   
   tasks:
