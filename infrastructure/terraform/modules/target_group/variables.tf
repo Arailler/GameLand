@@ -28,6 +28,7 @@ variable "targets" {
 variable "health_check" {
   type = object({
     path                = optional(string)
+    matcher             = string
     port                = string
     protocol            = string
     healthy_threshold   = number

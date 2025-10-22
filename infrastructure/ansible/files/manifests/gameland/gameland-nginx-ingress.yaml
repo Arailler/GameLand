@@ -3,8 +3,6 @@ kind: Ingress
 metadata:
   name: gameland-nginx-ingress
   namespace: gameland
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:

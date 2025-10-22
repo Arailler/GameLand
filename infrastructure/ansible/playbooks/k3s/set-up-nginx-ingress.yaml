@@ -57,17 +57,6 @@
       register: gameland_nginx_ingress_apply
       changed_when: "'created' in gameland_nginx_ingress_apply.stdout or 'configured' in gameland_nginx_ingress_apply.stdout"
 
-    - name: Copy Prometheus Nginx ingress manifest
-      copy:
-        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ prometheus_manifest }}"
-        dest: "{{ prometheus_manifest_destination }}"
-
-    - name: Apply Prometheus Nginx ingress manifest
-      shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ prometheus_manifest_destination }}
-      register: prometheus_nginx_ingress_apply
-      changed_when: "'created' in prometheus_nginx_ingress_apply.stdout or 'configured' in prometheus_nginx_ingress_apply.stdout"
-
     - name: Copy Grafana Nginx ingress manifest
       copy:
         src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ grafana_manifest }}"

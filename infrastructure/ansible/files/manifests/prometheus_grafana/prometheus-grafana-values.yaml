@@ -5,3 +5,8 @@ ingress:
 server:
   ingress:
     enabled: false
+grafana:
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
+      serve_from_sub_path: true

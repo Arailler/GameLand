@@ -5,7 +5,7 @@
   vars:
     gameland_namespace: gameland
     gameland_manifest_file: gameland.yaml
-    gameland_manifest_file_destination: "/home/{{ ansible_user }}/{{ general_manifest_file }}"
+    gameland_manifest_file_destination: "/home/{{ ansible_user }}/{{ gameland_manifest_file }}"
     deployment_name: gameland
 
   tasks:
