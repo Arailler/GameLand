@@ -576,37 +576,15 @@ module "workers_flannel_from_database" {
   description              = "Flannel from database"
 }
 
-module "workers_nodeport_gameland_from_alb" {
+module "workers_ingress_nodeport_from_alb" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
-  from_port                = 30000
-  to_port                  = 30000
+  from_port                = var.ingress_nodeport
+  to_port                  = var.ingress_nodeport
   protocol                 = "tcp"
   security_group_id        = module.workers_sg.sg_id
   source_security_group_id = module.lb_sg.sg_id
-  description              = "GameLand NodePort from ALB"
-}
-
-module "workers_nodeport_prometheus_from_alb" {
-  source                   = "../../modules/security_group_rule"
-  type                     = "ingress"
-  from_port                = 30001
-  to_port                  = 30001
-  protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.lb_sg.sg_id
-  description              = "Prometheus NodePort from ALB"
-}
-
-module "workers_nodeport_grafana_from_alb" {
-  source                   = "../../modules/security_group_rule"
-  type                     = "ingress"
-  from_port                = 30002
-  to_port                  = 30002
-  protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.lb_sg.sg_id
-  description              = "Grafana NodePort from ALB"
+  description              = "Ingress NodePort from ALB"
 }
 
 # Database
@@ -753,6 +731,7 @@ module "ingress_tg" {
 
   health_check = {
     path                = "/"
+    matcher             = "200-404"
     port                = "traffic-port"
     protocol            = "HTTP"
     healthy_threshold   = 2
@@ -843,6 +822,7 @@ module "workers_asg" {
   desired_capacity   = var.worker_min
   subnet_ids         = local.workers_subnets_ids
   launch_template_id = module.workers_lt.lt_id
+  target_group_arns  = [module.ingress_tg.tg_arn]
 }
 
 module "db_asg" {

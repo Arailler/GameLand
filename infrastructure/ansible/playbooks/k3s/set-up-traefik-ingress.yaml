@@ -22,17 +22,6 @@
       register: gameland_traefik_ingress_apply
       changed_when: "'created' in gameland_traefik_ingress_apply.stdout or 'configured' in gameland_traefik_ingress_apply.stdout"
 
-    - name: Copy Prometheus Traefik ingress manifest
-      copy:
-        src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ prometheus_manifest }}"
-        dest: "{{ prometheus_manifest_destination }}"
-
-    - name: Apply Prometheus Traefik ingress manifest
-      shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ prometheus_manifest_destination }}
-      register: prometheus_traefik_ingress_apply
-      changed_when: "'created' in prometheus_traefik_ingress_apply.stdout or 'configured' in prometheus_traefik_ingress_apply.stdout"
-
     - name: Copy Grafana Traefik ingress manifest
       copy:
         src: "{{ playbook_dir }}/../../files/manifests/prometheus_grafana/{{ grafana_manifest }}"
