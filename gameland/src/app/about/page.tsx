@@ -78,7 +78,7 @@ export default function About() {
             },
             {
               name: "Gronk the orc",
-              role: "Logistics & Brrowing manager",
+              role: "Logistics & Borrowing manager",
               image:
                 "https://cdn.pixabay.com/photo/2020/05/09/16/47/troll-5150380_1280.jpg",
               bio: "Once a mighty warrior, now a mighty organizer. Gronk ensures every game is tracked, cared for, and returned safely — or else.",
