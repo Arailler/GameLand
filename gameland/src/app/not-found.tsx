@@ -13,6 +13,7 @@ export default function NotFound() {
         <Image
           src="https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif"
           alt="Funny lost reaction meme"
+          unoptimized
           fill
           className="object-contain"
           sizes="(max-width: 768px) 100vw, 768px"
