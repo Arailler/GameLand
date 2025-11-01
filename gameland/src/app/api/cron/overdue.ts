@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { processOverdueBorrows } from "@/lib/processOverdueBorrows";
 
-export default async function GET(
-  req: NextRequest,
-  res: NextResponse
-) {
+export async function GET() {
   await processOverdueBorrows();
   return NextResponse.json({ message: "Overdue borrows processed." });
 }
