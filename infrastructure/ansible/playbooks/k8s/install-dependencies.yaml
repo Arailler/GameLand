@@ -2,7 +2,13 @@
 - name: Install K8s dependencies
   hosts: control_plane:workers:database
   become: true
-  
+  vars:
+    bin_directory: /opt/cni/bin
+    containerd_config_directory: /etc/containerd
+    containerd_config: "{{ containerd_config_directory }}/config.toml"
+    temp_cni_file: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+    kubernetes_apt_key: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
   tasks:
     - name: Update apt cache
       apt:
@@ -18,23 +24,29 @@
           - containerd
         state: present
 
+    - name: Ensure /opt/cni/bin exists
+      file:
+        path: "{{ bin_directory }}"
+        state: directory
+        mode: 0755
+
     - name: Ensure containerd config directory exists
       file:
-        path: /etc/containerd
+        path: "{{ containerd_config_directory }}"
         state: directory
 
     - name: Generate default containerd config
-      shell: containerd config default | tee /etc/containerd/config.toml
+      shell: "containerd config default | tee {{ containerd_config }}"
 
     - name: Set CNI bin_dir in containerd config
       replace:
-        path: /etc/containerd/config.toml
+        path: "{{ containerd_config }}"
         regexp: 'bin_dir = "/usr/lib/cni"'
-        replace: 'bin_dir = "/opt/cni/bin"'
+        replace: 'bin_dir = "{{ bin_directory }}"'
 
     - name: Enable SystemdCgroup in containerd config
       replace:
-        path: /etc/containerd/config.toml
+        path: "{{ containerd_config }}"
         regexp: 'SystemdCgroup = false'
         replace: 'SystemdCgroup = true'
 
@@ -44,35 +56,29 @@
         state: restarted
         enabled: yes
 
-    - name: Ensure /opt/cni/bin exists
-      file:
-        path: /opt/cni/bin
-        state: directory
-        mode: 0755
-
     - name: Download CNI plugins tarball
       get_url:
         url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
-        dest: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+        dest: "{{ temp_cni_file }}"
         mode: '0644'
 
     - name: Extract CNI plugins
       unarchive:
-        src: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
-        dest: /opt/cni/bin
+        src: "{{ temp_cni_file }}"
+        dest: "{{ bin_directory }}"
         remote_src: yes
-        creates: "/opt/cni/bin/bridge"
+        creates: "{{ bin_directory }}/bridge"
 
     - name: Add Kubernetes apt key
       shell: |
         curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/Release.key \
-          | gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+          | gpg --dearmor -o {{ kubernetes_apt_key }}
       args:
-        creates: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+        creates: "{{ kubernetes_apt_key }}"
 
     - name: Add Kubernetes apt repository
       apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/ /"
+        repo: "deb [signed-by={{ kubernetes_apt_key }}] https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/ /"
         state: present
 
     - name: Install kubeadm, kubelet, kubectl
@@ -85,8 +91,13 @@
         update_cache: yes
 
     - name: Hold kubeadm, kubelet, kubectl
-      shell: apt-mark hold kubelet kubeadm kubectl
-      changed_when: false
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
 
     - name: Ensure hostname resolves locally
       lineinfile:
