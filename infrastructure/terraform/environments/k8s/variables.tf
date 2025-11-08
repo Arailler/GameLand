@@ -28,33 +28,23 @@ variable "cp_size" {
   type        = string
 }
 
-variable "cp_min" {
-  description = "Minimum number of control plane instances"
+variable "cp_count" {
+  description = "Count of control plane instances"
   type        = number
 }
 
-variable "cp_max" {
-  description = "Maximum number of the control plane instances"
-  type        = number
-}
-
-variable "worker_ami" {
+variable "workers_ami" {
   description = "AMI of the workers"
   type        = string
 }
 
-variable "worker_size" {
+variable "workers_size" {
   description = "Size of the worker instances"
   type        = string
 }
 
-variable "worker_min" {
-  description = "Minimum number of worker instances"
-  type        = number
-}
-
-variable "worker_max" {
-  description = "Maximum number of worker instances"
+variable "workers_count" {
+  description = "Count of worker instances"
   type        = number
 }
 
@@ -68,17 +58,7 @@ variable "db_size" {
   type        = string
 }
 
-variable "db_min" {
-  description = "Minimum number of database instances"
-  type        = number
-}
-
-variable "db_max" {
-  description = "Maximum number of database instances"
-  type        = number
-}
-
-variable "ingress_nodeport" {
-  description = "Ingress NodePort of the cluster"
+variable "db_count" {
+  description = "Count of database instances"
   type        = number
 }
