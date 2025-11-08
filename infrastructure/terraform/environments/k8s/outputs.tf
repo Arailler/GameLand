@@ -1,23 +1,15 @@
-output "alb_dns_name" {
-  value = module.gameland_alb.alb_dns_name
-}
-
-output "bastion_private_ips" {
-  value = module.bastion_ec2.private_ips
-}
-
 output "bastion_public_ips" {
   value = module.bastion_ec2.public_ips
 }
 
 output "cp_private_ips" {
-  value = [for i in data.aws_instance.cp_instances : i.private_ip]
+  value = module.cp_ec2.private_ips
 }
 
 output "workers_private_ips" {
-  value = [for i in data.aws_instance.workers_instances : i.private_ip]
+  value = module.workers_ec2.private_ips
 }
 
 output "db_private_ips" {
-  value = [for i in data.aws_instance.db_instances : i.private_ip]
+  value = module.db_ec2.private_ips
 }

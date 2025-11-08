@@ -220,30 +220,6 @@ module "private_route_table_assoc_db_b" {
 ###########################
 # Security Groups
 ###########################
-
-# Load Balancer
-module "lb_sg" {
-  source = "../../modules/security_group"
-  name   = "lb-sg"
-  vpc_id = module.vpc.vpc_id
-  ingress_rules = [
-    {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
-  egress_rules = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
-}
-
 # Bastion
 module "bastion_sg" {
   source = "../../modules/security_group"
@@ -274,9 +250,9 @@ module "bastion_ssh" {
 }
 
 # Control plane
-module "control_plane_sg" {
+module "cp_sg" {
   source        = "../../modules/security_group"
-  name          = "control-plane-sg"
+  name          = "cp-sg"
   vpc_id        = module.vpc.vpc_id
   ingress_rules = []
   egress_rules = [
@@ -302,7 +278,7 @@ module "cp_ssh_from_bastion" {
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.bastion_sg.sg_id
   description              = "SSH from bastion"
 }
@@ -313,8 +289,8 @@ module "cp_kube_api_from_cp" {
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Kube API from control plane"
 }
 
@@ -324,7 +300,7 @@ module "cp_kube_api_from_workers" {
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Kube API from workers"
 }
@@ -335,8 +311,8 @@ module "cp_kube_api_from_database" {
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Kube API from database"
 }
 
@@ -346,7 +322,7 @@ module "cp_kubelet_from_workers" {
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Kubelet from workers"
 }
@@ -357,8 +333,8 @@ module "cp_kubelet_from_database" {
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Kubelet from database"
 }
 
@@ -368,7 +344,7 @@ module "cp_node_exporter_from_workers" {
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Node exporter from workers"
 }
@@ -379,8 +355,8 @@ module "cp_core_dns_from_cp" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Core DNS from control plane"
 }
 
@@ -390,7 +366,7 @@ module "cp_core_dns_from_workers" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Core DNS from workers"
 }
@@ -401,8 +377,8 @@ module "cp_core_dns_from_database" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Core DNS from database"
 }
 
@@ -412,8 +388,8 @@ module "cp_flannel_from_cp" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Flannel from control plane"
 }
 
@@ -423,7 +399,7 @@ module "cp_flannel_from_workers" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Flannel from workers"
 }
@@ -434,8 +410,8 @@ module "cp_flannel_from_database" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.control_plane_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Flannel from database"
 }
 
@@ -473,7 +449,7 @@ module "workers_kubelet_from_cp" {
   to_port                  = 10250
   protocol                 = "tcp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
 }
 
@@ -484,7 +460,7 @@ module "workers_node_exporter_from_cp" {
   to_port                  = 9100
   protocol                 = "tcp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Node exporter from control plane"
 }
 
@@ -506,7 +482,7 @@ module "workers_node_exporter_from_database" {
   to_port                  = 9100
   protocol                 = "tcp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Node exporter from database"
 }
 
@@ -517,7 +493,7 @@ module "workers_core_dns_from_cp" {
   to_port                  = 53
   protocol                 = "udp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Core DNS from control plane"
 }
 
@@ -539,7 +515,7 @@ module "workers_core_dns_from_database" {
   to_port                  = 53
   protocol                 = "udp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Core DNS from database"
 }
 
@@ -550,7 +526,7 @@ module "workers_flannel_from_cp" {
   to_port                  = 8472
   protocol                 = "udp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Flannel from control plane"
 }
 
@@ -572,25 +548,14 @@ module "workers_flannel_from_database" {
   to_port                  = 8472
   protocol                 = "udp"
   security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Flannel from database"
 }
 
-module "workers_ingress_nodeport_from_alb" {
-  source                   = "../../modules/security_group_rule"
-  type                     = "ingress"
-  from_port                = var.ingress_nodeport
-  to_port                  = var.ingress_nodeport
-  protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.lb_sg.sg_id
-  description              = "Ingress NodePort from ALB"
-}
-
 # Database
-module "database_sg" {
+module "db_sg" {
   source        = "../../modules/security_group"
-  name          = "database-sg"
+  name          = "db-sg"
   vpc_id        = module.vpc.vpc_id
   ingress_rules = []
   egress_rules = [
@@ -609,7 +574,7 @@ module "database_ssh_from_bastion" {
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  security_group_id        = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
   source_security_group_id = module.bastion_sg.sg_id
   description              = "SSH from bastion"
 }
@@ -620,8 +585,8 @@ module "database_kubelet_from_cp" {
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  security_group_id        = module.database_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
 }
 
@@ -631,7 +596,7 @@ module "database_node_exporter_from_workers" {
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Node exporter from workers"
 }
@@ -642,8 +607,8 @@ module "database_core_dns_from_cp" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Core DNS from control plane"
 }
 
@@ -653,7 +618,7 @@ module "database_core_dns_from_workers" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Core DNS from workers"
 }
@@ -664,8 +629,8 @@ module "database_core_dns_from_database" {
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Core DNS from database"
 }
 
@@ -675,8 +640,8 @@ module "database_flannel_from_cp" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
-  source_security_group_id = module.control_plane_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
   description              = "Flannel from control plane"
 }
 
@@ -686,7 +651,7 @@ module "database_flannel_from_workers" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
   source_security_group_id = module.workers_sg.sg_id
   description              = "Flannel from workers"
 }
@@ -697,50 +662,9 @@ module "database_flannel_from_database" {
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.database_sg.sg_id
-  source_security_group_id = module.database_sg.sg_id
+  security_group_id        = module.db_sg.sg_id
+  source_security_group_id = module.db_sg.sg_id
   description              = "Flannel from database"
-}
-
-###########################
-# Application Load Balancers
-###########################
-module "gameland_alb" {
-  source             = "../../modules/application_load_balancer"
-  name               = "gameland-alb"
-  subnet_ids         = local.public_subnets_ids
-  security_group_ids = [module.lb_sg.sg_id]
-}
-
-module "ingress_tg" {
-  source      = "../../modules/target_group"
-  name        = "ingress-tg"
-  port        = var.ingress_nodeport
-  protocol    = "HTTP"
-  target_type = "instance"
-  vpc_id      = module.vpc.vpc_id
-
-  health_check = {
-    path                = "/"
-    matcher             = "200-404"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    interval            = 30
-    timeout             = 5
-  }
-}
-
-module "gameland_alb_listener" {
-  source            = "../../modules/alb_listener"
-  load_balancer_arn = module.gameland_alb.lb_arn
-  port              = 80
-  protocol          = "HTTP"
-  default_action = {
-    type             = "forward"
-    target_group_arn = module.ingress_tg.tg_arn
-  }
 }
 
 ###########################
@@ -766,65 +690,35 @@ module "bastion_ec2" {
   key_name           = module.key_pair.key_name
 }
 
-###########################
-# Autoscaling Groups
-###########################
-# Launch Templates
-module "cp_lt" {
-  source             = "../../modules/launch_template"
-  name_prefix        = "${var.name}-cp-"
-  image_id           = var.cp_ami
+module "cp_ec2" {
+  source             = "../../modules/ec2_instance"
+  name_prefix        = "${var.name}-cp"
+  instance_count     = var.cp_count
+  ami                = var.cp_ami
   instance_type      = var.cp_size
-  key_name           = module.key_pair.key_name
-  security_group_ids = [module.control_plane_sg.sg_id]
-}
-
-module "workers_lt" {
-  source             = "../../modules/launch_template"
-  name_prefix        = "${var.name}-worker-"
-  image_id           = var.worker_ami
-  instance_type      = var.worker_size
-  key_name           = module.key_pair.key_name
-  security_group_ids = [module.workers_sg.sg_id]
-}
-
-module "db_lt" {
-  source             = "../../modules/launch_template"
-  name_prefix        = "${var.name}-db-"
-  image_id           = var.db_ami
-  instance_type      = var.db_size
-  key_name           = module.key_pair.key_name
-  security_group_ids = [module.database_sg.sg_id]
-}
-
-# Autoscaling Groups
-module "cp_asg" {
-  source             = "../../modules/autoscaling_group"
-  name               = "${var.name}-cp-asg"
-  min_size           = var.cp_min
-  max_size           = var.cp_max
-  desired_capacity   = var.cp_min
   subnet_ids         = local.cp_subnets_ids
-  launch_template_id = module.cp_lt.lt_id
+  security_group_ids = [module.cp_sg.sg_id]
+  key_name           = module.key_pair.key_name
 }
 
-module "workers_asg" {
-  source             = "../../modules/autoscaling_group"
-  name               = "${var.name}-workers-asg"
-  min_size           = var.worker_min
-  max_size           = var.worker_max
-  desired_capacity   = var.worker_min
+module "workers_ec2" {
+  source             = "../../modules/ec2_instance"
+  name_prefix        = "${var.name}-worker"
+  instance_count     = var.workers_count
+  ami                = var.workers_ami
+  instance_type      = var.workers_size
   subnet_ids         = local.workers_subnets_ids
-  launch_template_id = module.workers_lt.lt_id
-  target_group_arns  = [module.ingress_tg.tg_arn]
+  security_group_ids = [module.workers_sg.sg_id]
+  key_name           = module.key_pair.key_name
 }
 
-module "db_asg" {
-  source             = "../../modules/autoscaling_group"
-  name               = "${var.name}-db-asg"
-  min_size           = var.db_min
-  max_size           = var.db_max
-  desired_capacity   = var.db_min
+module "db_ec2" {
+  source             = "../../modules/ec2_instance"
+  name_prefix        = "${var.name}-db"
+  instance_count     = var.db_count
+  ami                = var.db_ami
+  instance_type      = var.db_size
   subnet_ids         = local.db_subnets_ids
-  launch_template_id = module.db_lt.lt_id
+  security_group_ids = [module.db_sg.sg_id]
+  key_name           = module.key_pair.key_name
 }
