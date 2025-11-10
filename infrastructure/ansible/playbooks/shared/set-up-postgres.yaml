@@ -26,10 +26,6 @@
       register: rollout_status
       changed_when: false
 
-    - name: Show rollout status
-      debug:
-        msg: "{{ rollout_status.stdout }}"
-
 - name: Populate Postgres database
   hosts: control_plane[0]
   become: true

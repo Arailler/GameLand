@@ -1,3 +1,7 @@
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+
 output "bastion_public_ips" {
   value = module.bastion_ec2.public_ips
 }
