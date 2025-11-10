@@ -28,6 +28,12 @@ variable "key_name" {
   description = "Key pair name for SSH access"
 }
 
+variable "iam_instance_profile" {
+  type        = string
+  description = "Instance profile of the instances"
+  default     = null
+}
+
 variable "name_prefix" {
   type        = string
   description = "Prefix for the Name tag of each instance"

@@ -1,0 +1,22 @@
+---
+- name: Delete all ingresses in the cluster
+  hosts: control_plane[0]
+  become: true
+  tasks:
+    - name: Delete Gameland ingress
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress gameland-ingress -n gameland
+      register: delete_gameland_ingress
+      changed_when: "'deleted' in delete_gameland_ingress.stdout"
+
+    - name: Delete Prometheus ingress
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress prometheus-ingress -n monitoring
+      register: delete_prometheus_ingress
+      changed_when: "'deleted' in delete_prometheus_ingress.stdout"
+
+    - name: Delete Grafana ingress
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress grafana-ingress -n monitoring
+      register: delete_grafana_ingress
+      changed_when: "'deleted' in delete_grafana_ingress.stdout"

@@ -677,8 +677,55 @@ module "key_pair" {
 }
 
 ###########################
+# Instance Profile
+###########################
+resource "aws_iam_role" "workers_role" {
+  name = "${var.name}-workers-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "aws_lb_controller" {
+  name        = "${var.name}-aws-lb-controller-policy"
+  description = "IAM policy for AWS Load Balancer Controller on worker nodes"
+  policy      = file("../../modules/iam_policy/policies/aws_lb_controller.json")
+}
+
+resource "aws_iam_role_policy_attachment" "workers_lb_controller" {
+  role       = aws_iam_role.workers_role.name
+  policy_arn = aws_iam_policy.aws_lb_controller.arn
+}
+
+resource "aws_iam_policy" "external_dns" {
+  name        = "${var.name}-external-dns-policy"
+  description = "IAM policy for ExternalDNS on worker nodes"
+  policy      = file("../../modules/iam_policy/policies/external_dns.json")
+}
+
+resource "aws_iam_role_policy_attachment" "workers_external_dns" {
+  role       = aws_iam_role.workers_role.name
+  policy_arn = aws_iam_policy.external_dns.arn
+}
+
+resource "aws_iam_instance_profile" "workers_profile" {
+  name = "${var.name}-workers-profile"
+  role = aws_iam_role.workers_role.name
+}
+
+###########################
 # EC2 Instances
 ###########################
+# Bastion
 module "bastion_ec2" {
   source             = "../../modules/ec2_instance"
   name_prefix        = "${var.name}-bastion"
@@ -690,6 +737,7 @@ module "bastion_ec2" {
   key_name           = module.key_pair.key_name
 }
 
+# Control plane
 module "cp_ec2" {
   source             = "../../modules/ec2_instance"
   name_prefix        = "${var.name}-cp"
@@ -701,24 +749,28 @@ module "cp_ec2" {
   key_name           = module.key_pair.key_name
 }
 
+# Workers
 module "workers_ec2" {
-  source             = "../../modules/ec2_instance"
-  name_prefix        = "${var.name}-worker"
-  instance_count     = var.workers_count
-  ami                = var.workers_ami
-  instance_type      = var.workers_size
-  subnet_ids         = local.workers_subnets_ids
-  security_group_ids = [module.workers_sg.sg_id]
-  key_name           = module.key_pair.key_name
+  source               = "../../modules/ec2_instance"
+  name_prefix          = "${var.name}-worker"
+  instance_count       = var.workers_count
+  ami                  = var.workers_ami
+  instance_type        = var.workers_size
+  subnet_ids           = local.workers_subnets_ids
+  security_group_ids   = [module.workers_sg.sg_id]
+  key_name             = module.key_pair.key_name
+  iam_instance_profile = aws_iam_instance_profile.workers_profile.name
 }
 
+# Database
 module "db_ec2" {
-  source             = "../../modules/ec2_instance"
-  name_prefix        = "${var.name}-db"
-  instance_count     = var.db_count
-  ami                = var.db_ami
-  instance_type      = var.db_size
-  subnet_ids         = local.db_subnets_ids
-  security_group_ids = [module.db_sg.sg_id]
-  key_name           = module.key_pair.key_name
+  source               = "../../modules/ec2_instance"
+  name_prefix          = "${var.name}-db"
+  instance_count       = var.db_count
+  ami                  = var.db_ami
+  instance_type        = var.db_size
+  subnet_ids           = local.db_subnets_ids
+  security_group_ids   = [module.db_sg.sg_id]
+  key_name             = module.key_pair.key_name
+  iam_instance_profile = aws_iam_instance_profile.workers_profile.name
 }

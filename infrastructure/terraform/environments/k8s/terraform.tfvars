@@ -1,13 +1,13 @@
 name          = "gameland"
 bastion_ami   = "ami-0f439e819ba112bd7"
 bastion_size  = "t3.small"
-bastion_count = 2
+bastion_count = 1
 cp_ami        = "ami-0f439e819ba112bd7"
 cp_size       = "t3.large"
-cp_count      = 2
+cp_count      = 1
 workers_ami   = "ami-0f439e819ba112bd7"
 workers_size  = "t3.large"
-workers_count = 2
+workers_count = 1
 db_ami        = "ami-0f439e819ba112bd7"
 db_size       = "t3.medium"
-db_count      = 2
+db_count      = 1
