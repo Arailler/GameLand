@@ -33,32 +33,32 @@ variable "cp_count" {
   type        = number
 }
 
-variable "workers_ami" {
-  description = "AMI of the workers"
+variable "workers_app_ami" {
+  description = "AMI of the worker-app instances"
   type        = string
 }
 
-variable "workers_size" {
-  description = "Size of the worker instances"
+variable "workers_app_size" {
+  description = "Size of the worker-app instances"
   type        = string
 }
 
-variable "workers_count" {
-  description = "Count of worker instances"
+variable "workers_app_count" {
+  description = "Count of worker-app instances"
   type        = number
 }
 
-variable "db_ami" {
-  description = "AMI of the database instances"
+variable "workers_db_ami" {
+  description = "AMI of the worker-db instances"
   type        = string
 }
 
-variable "db_size" {
-  description = "Size of the database instances"
+variable "workers_db_size" {
+  description = "Size of the worker-db instances"
   type        = string
 }
 
-variable "db_count" {
-  description = "Count of database instances"
+variable "workers_db_count" {
+  description = "Count of worker-db instances"
   type        = number
 }

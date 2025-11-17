@@ -1,6 +1,6 @@
 ---
-- name: Join Kubernetes Workers and Database nodes to cluster
-  hosts: workers:database
+- name: Join Kubernetes worker nodes to cluster
+  hosts: workers_app:workers_db
   become: true
   
   tasks:
@@ -11,6 +11,6 @@
       run_once: true
 
     - name: Join node to Kubernetes cluster
-      shell: "{{ join_command.stdout }} --ignore-preflight-errors=all"
+      command: "{{ join_command.stdout }} --ignore-preflight-errors=all"
       args:
         creates: /etc/kubernetes/kubelet.conf

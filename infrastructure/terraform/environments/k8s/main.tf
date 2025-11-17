@@ -90,25 +90,25 @@ module "private_subnet_cp_b" {
   name                    = "${var.name}-private-control-plane-b"
 }
 
-module "private_subnet_worker_a" {
+module "private_subnet_worker_app_a" {
   source                  = "../../modules/subnet"
   vpc_id                  = module.vpc.vpc_id
   cidr_block              = "10.0.5.0/24"
   availability_zone       = "eu-central-1a"
   map_public_ip_on_launch = false
-  name                    = "${var.name}-private-worker-a"
+  name                    = "${var.name}-private-worker-app-a"
 }
 
-module "private_subnet_worker_b" {
+module "private_subnet_worker_app_b" {
   source                  = "../../modules/subnet"
   vpc_id                  = module.vpc.vpc_id
   cidr_block              = "10.0.6.0/24"
   availability_zone       = "eu-central-1b"
   map_public_ip_on_launch = false
-  name                    = "${var.name}-private-worker-b"
+  name                    = "${var.name}-private-worker-app-b"
 }
 
-module "private_subnet_db_a" {
+module "private_subnet_worker_db_a" {
   source                  = "../../modules/subnet"
   vpc_id                  = module.vpc.vpc_id
   cidr_block              = "10.0.7.0/24"
@@ -117,7 +117,7 @@ module "private_subnet_db_a" {
   name                    = "${var.name}-private-db-a"
 }
 
-module "private_subnet_db_b" {
+module "private_subnet_worker_db_b" {
   source                  = "../../modules/subnet"
   vpc_id                  = module.vpc.vpc_id
   cidr_block              = "10.0.8.0/24"
@@ -193,27 +193,27 @@ module "private_route_table_assoc_cp_b" {
   route_table_id = module.private_route_table_b.route_table_id
 }
 
-module "private_route_table_assoc_worker_a" {
+module "private_route_table_assoc_worker_app_a" {
   source         = "../../modules/route_table_association"
-  subnet_id      = module.private_subnet_worker_a.subnet_id
+  subnet_id      = module.private_subnet_worker_app_a.subnet_id
   route_table_id = module.private_route_table_a.route_table_id
 }
 
-module "private_route_table_assoc_worker_b" {
+module "private_route_table_assoc_worker_app_b" {
   source         = "../../modules/route_table_association"
-  subnet_id      = module.private_subnet_worker_b.subnet_id
+  subnet_id      = module.private_subnet_worker_app_b.subnet_id
   route_table_id = module.private_route_table_b.route_table_id
 }
 
-module "private_route_table_assoc_db_a" {
+module "private_route_table_assoc_worker_db_a" {
   source         = "../../modules/route_table_association"
-  subnet_id      = module.private_subnet_db_a.subnet_id
+  subnet_id      = module.private_subnet_worker_db_a.subnet_id
   route_table_id = module.private_route_table_a.route_table_id
 }
 
-module "private_route_table_assoc_db_b" {
+module "private_route_table_assoc_worker_db_b" {
   source         = "../../modules/route_table_association"
-  subnet_id      = module.private_subnet_db_b.subnet_id
+  subnet_id      = module.private_subnet_worker_db_b.subnet_id
   route_table_id = module.private_route_table_b.route_table_id
 }
 
@@ -294,59 +294,59 @@ module "cp_kube_api_from_cp" {
   description              = "Kube API from control plane"
 }
 
-module "cp_kube_api_from_workers" {
+module "cp_kube_api_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Kube API from workers"
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kube API from workers-app"
 }
 
-module "cp_kube_api_from_database" {
+module "cp_kube_api_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Kube API from database"
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Kube API from workers-db"
 }
 
-module "cp_kubelet_from_workers" {
+module "cp_kubelet_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Kubelet from workers"
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kubelet from workers-app"
 }
 
-module "cp_kubelet_from_database" {
+module "cp_kubelet_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Kubelet from database"
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Kubelet from workers-db"
 }
 
-module "cp_node_exporter_from_workers" {
+module "cp_node_exporter_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Node exporter from workers"
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Node exporter from workers-app"
 }
 
 module "cp_core_dns_from_cp" {
@@ -360,26 +360,26 @@ module "cp_core_dns_from_cp" {
   description              = "Core DNS from control plane"
 }
 
-module "cp_core_dns_from_workers" {
+module "cp_core_dns_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Core DNS from workers"
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Core DNS from workers-app"
 }
 
-module "cp_core_dns_from_database" {
+module "cp_core_dns_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Core DNS from database"
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Core DNS from workers-db"
 }
 
 module "cp_flannel_from_cp" {
@@ -393,32 +393,32 @@ module "cp_flannel_from_cp" {
   description              = "Flannel from control plane"
 }
 
-module "cp_flannel_from_workers" {
+module "cp_flannel_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Flannel from workers"
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Flannel from workers-app"
 }
 
-module "cp_flannel_from_database" {
+module "cp_flannel_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
   security_group_id        = module.cp_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Flannel from database"
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Flannel from workers-db"
 }
 
-# Workers
-module "workers_sg" {
+# Workers-app
+module "workers_app_sg" {
   source        = "../../modules/security_group"
-  name          = "workers-sg"
+  name          = "workers-app-sg"
   vpc_id        = module.vpc.vpc_id
   ingress_rules = []
   egress_rules = [
@@ -431,129 +431,129 @@ module "workers_sg" {
   ]
 }
 
-module "workers_ssh_from_bastion" {
+module "workers_app_ssh_from_bastion" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
+  security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.bastion_sg.sg_id
   description              = "SSH from bastion"
 }
 
-module "workers_kubelet_from_cp" {
+module "workers_app_kubelet_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
+  security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
 }
 
-module "workers_node_exporter_from_cp" {
+module "workers_app_node_exporter_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
+  security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Node exporter from control plane"
 }
 
-module "workers_node_exporter_from_workers" {
+module "workers_app_node_exporter_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Node exporter from workers"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Node exporter from workers-app"
 }
 
-module "workers_node_exporter_from_database" {
+module "workers_app_node_exporter_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Node exporter from database"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Node exporter from workers-db"
 }
 
-module "workers_core_dns_from_cp" {
+module "workers_app_core_dns_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
+  security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Core DNS from control plane"
 }
 
-module "workers_core_dns_from_workers" {
+module "workers_app_core_dns_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Core DNS from workers"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Core DNS from workers-app"
 }
 
-module "workers_core_dns_from_database" {
+module "workers_app_core_dns_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Core DNS from database"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Core DNS from workers-db"
 }
 
-module "workers_flannel_from_cp" {
+module "workers_app_flannel_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
+  security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Flannel from control plane"
 }
 
-module "workers_flannel_from_workers" {
+module "workers_app_flannel_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Flannel from workers"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Flannel from workers-app"
 }
 
-module "workers_flannel_from_database" {
+module "workers_app_flannel_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.workers_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Flannel from database"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Flannel from workers-db"
 }
 
 # Database
-module "db_sg" {
+module "workers_db_sg" {
   source        = "../../modules/security_group"
   name          = "db-sg"
   vpc_id        = module.vpc.vpc_id
@@ -568,103 +568,103 @@ module "db_sg" {
   ]
 }
 
-module "database_ssh_from_bastion" {
+module "workers_db_ssh_from_bastion" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  security_group_id        = module.db_sg.sg_id
+  security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.bastion_sg.sg_id
   description              = "SSH from bastion"
 }
 
-module "database_kubelet_from_cp" {
+module "workers_db_kubelet_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  security_group_id        = module.db_sg.sg_id
+  security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
 }
 
-module "database_node_exporter_from_workers" {
+module "workers_db_node_exporter_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
   protocol                 = "tcp"
-  security_group_id        = module.db_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Node exporter from workers"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Node exporter from workers-app"
 }
 
-module "database_core_dns_from_cp" {
+module "workers_db_core_dns_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
+  security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Core DNS from control plane"
 }
 
-module "database_core_dns_from_workers" {
+module "workers_db_core_dns_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Core DNS from workers"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Core DNS from workers_app"
 }
 
-module "database_core_dns_from_database" {
+module "workers_db_core_dns_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 53
   to_port                  = 53
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Core DNS from database"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Core DNS from workers-db"
 }
 
-module "database_flannel_from_cp" {
+module "workers_db_flannel_from_cp" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
+  security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Flannel from control plane"
 }
 
-module "database_flannel_from_workers" {
+module "workers_db_flannel_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
-  source_security_group_id = module.workers_sg.sg_id
-  description              = "Flannel from workers"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Flannel from workers-app"
 }
 
-module "database_flannel_from_database" {
+module "workers_db_flannel_from_workers_db" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
   from_port                = 8472
   to_port                  = 8472
   protocol                 = "udp"
-  security_group_id        = module.db_sg.sg_id
-  source_security_group_id = module.db_sg.sg_id
-  description              = "Flannel from database"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Flannel from workers-db"
 }
 
 ###########################
@@ -749,28 +749,28 @@ module "cp_ec2" {
   key_name           = module.key_pair.key_name
 }
 
-# Workers
-module "workers_ec2" {
+# Workers-app
+module "workers_app_ec2" {
   source               = "../../modules/ec2_instance"
-  name_prefix          = "${var.name}-worker"
-  instance_count       = var.workers_count
-  ami                  = var.workers_ami
-  instance_type        = var.workers_size
-  subnet_ids           = local.workers_subnets_ids
-  security_group_ids   = [module.workers_sg.sg_id]
+  name_prefix          = "${var.name}-worker-app"
+  instance_count       = var.workers_app_count
+  ami                  = var.workers_app_ami
+  instance_type        = var.workers_app_size
+  subnet_ids           = local.workers_app_subnets_ids
+  security_group_ids   = [module.workers_app_sg.sg_id]
   key_name             = module.key_pair.key_name
   iam_instance_profile = aws_iam_instance_profile.workers_profile.name
 }
 
-# Database
-module "db_ec2" {
+# Workers-db
+module "workers_db_ec2" {
   source               = "../../modules/ec2_instance"
-  name_prefix          = "${var.name}-db"
-  instance_count       = var.db_count
-  ami                  = var.db_ami
-  instance_type        = var.db_size
-  subnet_ids           = local.db_subnets_ids
-  security_group_ids   = [module.db_sg.sg_id]
+  name_prefix          = "${var.name}-worker-db"
+  instance_count       = var.workers_db_count
+  ami                  = var.workers_db_ami
+  instance_type        = var.workers_db_size
+  subnet_ids           = local.workers_db_subnets_ids
+  security_group_ids   = [module.workers_db_sg.sg_id]
   key_name             = module.key_pair.key_name
   iam_instance_profile = aws_iam_instance_profile.workers_profile.name
 }

@@ -1,12 +1,10 @@
 ---
 - name: Set up Gameland components
   hosts: control_plane[0]
-  become: true
+  become: false
   vars:
-    gameland_namespace: gameland
     gameland_manifest_file: gameland.yaml
     gameland_manifest_file_destination: "/home/{{ ansible_user }}/{{ gameland_manifest_file }}"
-    deployment_name: gameland
 
   tasks:
     - name: Copy gameland.yaml manifest to control plane
@@ -15,13 +13,11 @@
         dest: "{{ gameland_manifest_file_destination }}"
 
     - name: Apply Gameland manifest
-      shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} apply -f {{ gameland_manifest_file_destination }}
+      command: kubectl apply -f {{ gameland_manifest_file_destination }}
       register: apply_output
       changed_when: "'created' in apply_output.stdout or 'configured' in apply_output.stdout"
 
     - name: Wait for Gameland deployment rollout
-      shell: |
-        kubectl --kubeconfig {{ kubeconfig_path }} rollout status deployment {{ deployment_name }} -n {{ gameland_namespace }} --timeout=180s
+      command: kubectl rollout status deployment gameland -n gameland --timeout=180s
       register: rollout_status
       changed_when: false
