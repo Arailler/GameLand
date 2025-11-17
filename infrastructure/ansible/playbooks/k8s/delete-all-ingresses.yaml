@@ -1,22 +1,84 @@
 ---
 - name: Delete all ingresses in the cluster
   hosts: control_plane[0]
-  become: true
+  become: false
+  
   tasks:
     - name: Delete Gameland ingress
-      ansible.builtin.command:
-        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress gameland-ingress -n gameland
+      command: kubectl delete ingress gameland-ingress -n gameland
       register: delete_gameland_ingress
       changed_when: "'deleted' in delete_gameland_ingress.stdout"
 
     - name: Delete Prometheus ingress
-      ansible.builtin.command:
-        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress prometheus-ingress -n monitoring
+      command: kubectl delete ingress prometheus-ingress -n monitoring
       register: delete_prometheus_ingress
       changed_when: "'deleted' in delete_prometheus_ingress.stdout"
 
     - name: Delete Grafana ingress
-      ansible.builtin.command:
-        cmd: kubectl --kubeconfig {{ kubeconfig_path }} delete ingress grafana-ingress -n monitoring
+      command: kubectl delete ingress grafana-ingress -n monitoring
       register: delete_grafana_ingress
       changed_when: "'deleted' in delete_grafana_ingress.stdout"
+
+- name: Wait for Load Balancer and DNS cleanup before destroying infra
+  hosts: control_plane[0]
+  gather_facts: false
+  become: false
+  vars:
+    apps:
+      - name: GameLand
+        record: "{{ gameland_record }}"
+      - name: Prometheus
+        record: "{{ prometheus_record }}"
+      - name: Grafana
+        record: "{{ grafana_record }}"
+    wait_interval: 15
+    wait_retries: 40
+  
+  tasks:
+    - name: Wait for the load balancer deletion
+      shell: |
+        aws elbv2 describe-load-balancers \
+          --region {{ aws_region }} \
+          --query "LoadBalancers[?starts_with(LoadBalancerName,'k8s-gameland')].LoadBalancerArn" \
+          --output text
+      register: lb_check
+      changed_when: false
+      retries: "{{ wait_retries }}"
+      delay: "{{ wait_interval }}"
+      until: lb_check.stdout | trim == ""
+
+    - name: Get hosted zone ID
+      shell: |
+        aws route53 list-hosted-zones-by-name \
+          --dns-name gameland-demo.com \
+          --query "HostedZones[0].Id" \
+          --output text
+      register: hosted_zone_id
+      changed_when: false
+
+    - name: Normalize hosted zone ID
+      set_fact:
+        hosted_zone_id: "{{ hosted_zone_id.stdout | trim | regex_replace('^/hostedzone/', '') }}"
+
+    - name: Wait for DNS records deletion
+      shell: >
+        aws route53 list-resource-record-sets
+        --hosted-zone-id {{ hosted_zone_id }}
+        --query "ResourceRecordSets[?Name=='{{ item.record }}.']"
+        --output text
+      register: dns_records_deleted
+      changed_when: false
+      retries: "{{ wait_retries }}"
+      delay: "{{ wait_interval }}"
+      until: dns_records_deleted.stdout | trim | length == 0
+      loop: "{{ apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Destroy the entire infra as code with Terraform
+      ansible.builtin.command:
+        cmd: terraform destroy -auto-approve
+        chdir: "{{ playbook_dir }}/../../../terraform/environments/k8s/"
+      register: terraform_destroy
+      changed_when: false
+      delegate_to: localhost

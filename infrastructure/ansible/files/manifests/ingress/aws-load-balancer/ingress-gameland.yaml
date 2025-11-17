@@ -8,7 +8,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: instance
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/group.name: gameland
-    alb.ingress.kubernetes.io/target-node-labels: role=worker
+    alb.ingress.kubernetes.io/target-node-labels: role=worker-app
     external-dns.alpha.kubernetes.io/hostname: website.gameland-demo.com
 spec:
   ingressClassName: alb

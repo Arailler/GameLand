@@ -2,10 +2,13 @@
 - name: Set up K8s Control Plane
   hosts: control_plane
   become: true
-  
+  vars:
+    admin_config: /etc/kubernetes/admin.conf
+    temp_helm_file: /tmp/helm.tar.gz
+
   tasks:
     - name: Initialize Kubernetes cluster
-      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket=/run/containerd/containerd.sock
+      command: "kubeadm init --pod-network-cidr={{ pod_network_cidr }} --cri-socket=/run/containerd/containerd.sock"
       args:
         creates: "{{ admin_config }}"
 
@@ -32,36 +35,31 @@
         line: "alias k=kubectl"
         state: present
 
+    - name: Download Helm binary
+      get_url:
+        url: "https://get.helm.sh/helm-v{{ helm_version }}-linux-amd64.tar.gz"
+        dest: "{{ temp_helm_file }}"
+    
+    - name: Extract Helm
+      unarchive:
+        src: "{{ temp_helm_file }}"
+        dest: /usr/local/bin/
+        remote_src: yes
+        extra_opts: ["--strip-components=1"]
+        creates: /usr/local/bin/helm
+
     - name: Install Flannel CNI
-      become_user: "{{ ansible_user }}"
-      shell: kubectl --kubeconfig {{ kubeconfig_path }} apply -f https://github.com/flannel-io/flannel/releases/download/v{{ flannel_version }}/kube-flannel.yml
+      command: kubectl --kubeconfig {{ kubeconfig_path }} apply -f https://github.com/flannel-io/flannel/releases/download/v{{ flannel_version }}/kube-flannel.yml
       when: cni == "flannel"
 
-    - name: Install Calico CNI
-      become_user: "{{ ansible_user }}"
-      shell: kubectl --kubeconfig {{ kubeconfig_path }} apply -f https://raw.githubusercontent.com/projectcalico/calico/v{{ calico_version }}/manifests/calico.yaml
+    - name: Install Calico CNI using Helm
+      shell: |
+        helm repo add projectcalico https://docs.projectcalico.org/charts
+        helm repo update
+        helm upgrade --install calico projectcalico/tigera-operator \
+          --kubeconfig {{ kubeconfig_path }} \
+          --namespace tigera-operator --create-namespace \
+          --set installation.calicoNetwork.ipPools[0].cidr="{{ pod_network_cidr }}" \
+          --set installation.calicoNetwork.ipPools[0].natOutgoing="Enabled" \
+          --set installation.calicoNetwork.nodeAddressAutodetectionV4.interface="ens5"
       when: cni == "calico"
-
-    - name: Wait until all kube-system pods are 100% ready
-      become_user: "{{ ansible_user }}"
-      shell: |
-        set -e
-        for i in $(seq 1 60); do
-          not_ready=$(kubectl get pods --kubeconfig {{ kubeconfig_path }} -n kube-system -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.containerStatuses[*]}{.ready}{" "}{end}{"\n"}{end}' \
-            | awk '{for(i=2;i<=NF;i++){if($i!="true") print $1}}' | wc -l)
-          if [ "$not_ready" -eq 0 ]; then
-            echo "All pods are 100% ready"
-            exit 0
-          fi
-          echo "Waiting for pods to be 100% ready..."
-          sleep 10
-        done
-        echo "Timeout waiting for all kube-system pods to be 100% ready"
-        exit 1
-
-    - name: Install Helm
-      shell: |
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-      args:
-        creates: /usr/local/bin/helm
-        

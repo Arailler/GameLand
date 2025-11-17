@@ -44,7 +44,7 @@ spec:
         app: postgres
     spec:
       nodeSelector:
-        role: database
+        role: worker-db
       containers:
         - name: postgres
           image: postgres:16

@@ -1,11 +1,11 @@
 ---
 - name: Install K8s dependencies
-  hosts: control_plane:workers:database
+  hosts: control_plane:workers_app:workers_db
   become: true
   vars:
-    bin_directory: /opt/cni/bin
     containerd_config_directory: /etc/containerd
     containerd_config: "{{ containerd_config_directory }}/config.toml"
+    bin_directory: /opt/cni/bin
     temp_cni_file: "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
     kubernetes_apt_key: /usr/share/keyrings/kubernetes-archive-keyring.gpg
 
@@ -13,7 +13,7 @@
     - name: Update apt cache
       apt:
         update_cache: yes
-
+        
     - name: Install required dependencies
       apt:
         name:
@@ -21,14 +21,56 @@
           - gnupg2
           - apt-transport-https
           - ca-certificates
+          - unzip
           - containerd
         state: present
+    
+    - name: Download AWS CLI v2
+      get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/awscliv2.zip"
+        mode: '0644'
 
-    - name: Ensure /opt/cni/bin exists
+    - name: Unzip AWS CLI v2
+      unarchive:
+        src: "/tmp/awscliv2.zip"
+        dest: "/tmp/"
+        remote_src: true
+
+    - name: Install AWS CLI v2
+      shell: "/tmp/aws/install"
+      args:
+        creates: "/usr/local/bin/aws"
+
+    - name: Ensure ~/.aws directory exists
       file:
-        path: "{{ bin_directory }}"
+        path: "/home/{{ ansible_user }}/.aws"
         state: directory
-        mode: 0755
+        mode: '0700'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Create AWS credentials file
+      copy:
+        dest: "/home/{{ ansible_user }}/.aws/credentials"
+        mode: '0600'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        content: |
+          [default]
+          aws_access_key_id = {{ aws_access_key_id }}
+          aws_secret_access_key = {{ aws_secret_access_key }}
+
+    - name: Create AWS CLI config file
+      copy:
+        dest: "/home/{{ ansible_user }}/.aws/config"
+        mode: '0600'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        content: |
+          [default]
+          region = {{ aws_region }}
+          output = json
 
     - name: Ensure containerd config directory exists
       file:
@@ -37,6 +79,12 @@
 
     - name: Generate default containerd config
       shell: "containerd config default | tee {{ containerd_config }}"
+
+    - name: Ensure /opt/cni/bin exists
+      file:
+        path: "{{ bin_directory }}"
+        state: directory
+        mode: 0755
 
     - name: Set CNI bin_dir in containerd config
       replace:
@@ -60,7 +108,7 @@
       get_url:
         url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
         dest: "{{ temp_cni_file }}"
-        mode: '0644'
+        mode: 0644
 
     - name: Extract CNI plugins
       unarchive:
@@ -98,12 +146,6 @@
         - kubelet
         - kubeadm
         - kubectl
-
-    - name: Ensure hostname resolves locally
-      lineinfile:
-        path: /etc/hosts
-        line: "127.0.0.1 {{ ansible_hostname }}"
-        state: present
 
     - name: Disable swap
       shell: |

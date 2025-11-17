@@ -35,7 +35,7 @@ spec:
         app: gameland
     spec:
       nodeSelector:
-        role: worker
+        role: worker-app
       containers:
         - name: gameland
           image: arailler/gameland:latest
