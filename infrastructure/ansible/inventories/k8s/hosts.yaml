@@ -3,18 +3,19 @@ all:
     bastion:
       hosts:
         bastion_host:
-          ansible_host: 63.181.29.230
+          ansible_host: <PUBLIC_IP>
     k8s:
       children:
         control_plane:
           hosts:
             cp-1:
-              ansible_host: 10.0.3.90
+              ansible_host: <PRIVATE_IP>
         workers_app:
           hosts:
             app-1:
-              ansible_host: 10.0.5.143
+              ansible_host: <PRIVATE_IP>
         workers_db:
           hosts:
             db-1:
-              ansible_host: 10.0.7.81
+              ansible_host: <PRIVATE_IP>
+              
