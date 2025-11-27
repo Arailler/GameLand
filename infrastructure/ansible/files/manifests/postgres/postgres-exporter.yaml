@@ -5,7 +5,7 @@ metadata:
   namespace: postgres
 type: Opaque
 data:
-  DATA_SOURCE_NAME: cG9zdGdyZXNxbDovL2V4cG9ydGVyOmV4cG9ydGVycGFzc0Bwb3N0Z3Jlcy5nYW1lbGFuZC5zdmMuY2x1c3Rlci5sb2NhbDo1NDMyL2dhbWVsYW5kP3NzbG1vZGU9ZGlzYWJsZQ==
+  DATA_SOURCE_NAME: <BASE_64_ENCODED_STRING>
 ---
 apiVersion: apps/v1
 kind: Deployment
