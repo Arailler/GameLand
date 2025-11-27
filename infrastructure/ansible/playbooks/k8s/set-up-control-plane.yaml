@@ -29,6 +29,58 @@
         group: "{{ ansible_user }}"
         mode: 0644
 
+    - name: Set etcd listen-metrics-urls
+      replace:
+        path: /etc/kubernetes/manifests/etcd.yaml
+        regexp: '(- --listen-metrics-urls=)http://127\.0\.0\.1:2381'
+        replace: '\1http://0.0.0.0:2381'
+
+    - name: Set kube-scheduler bind-address
+      replace:
+        path: /etc/kubernetes/manifests/kube-scheduler.yaml
+        regexp: '- --bind-address=.*'
+        replace: '- --bind-address=0.0.0.0'
+
+    - name: Set kube-scheduler bind-address secure-port
+      replace:
+        path: /etc/kubernetes/manifests/kube-scheduler.yaml
+        regexp: '- --secure-port=.*'
+        replace: '- --secure-port=10259'
+
+    - name: Set kube-controller-manager bind-address
+      replace:
+        path: /etc/kubernetes/manifests/kube-controller-manager.yaml
+        regexp: '- --bind-address=.*'
+        replace: '- --bind-address=0.0.0.0'
+
+    - name: Set kube-controller-manager bind-address secure-port
+      replace:
+        path: /etc/kubernetes/manifests/kube-controller-manager.yaml
+        regexp: '- --secure-port=.*'
+        replace: '--secure-port=10257'
+   
+    - name: Wait for etcd port 2379 to open
+      wait_for:
+        host: 127.0.0.1
+        port: 2379
+        state: started
+        timeout: 600
+
+    - name: Dump current kube-proxy ConfigMap
+      shell: "kubectl --kubeconfig {{ kubeconfig_path }} -n kube-system get configmap kube-proxy -o yaml > /tmp/kube-proxy.yaml"
+
+    - name: Update metricsBindAddress to 0.0.0.0:10249
+      replace:
+        path: /tmp/kube-proxy.yaml
+        regexp: 'metricsBindAddress:.*'
+        replace: 'metricsBindAddress: "0.0.0.0:10249"'
+
+    - name: Apply updated ConfigMap
+      shell: "kubectl --kubeconfig {{ kubeconfig_path }} apply -f /tmp/kube-proxy.yaml"
+
+    - name: Restart kube-proxy pods
+      command: "kubectl --kubeconfig {{ kubeconfig_path }} -n kube-system delete pod -l k8s-app=kube-proxy"
+    
     - name: Ensure kubectl alias in bashrc
       lineinfile:
         path: "/home/{{ ansible_user }}/.bashrc"

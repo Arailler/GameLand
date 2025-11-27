@@ -404,15 +404,59 @@ module "cp_flannel_from_workers_app" {
   description              = "Flannel from workers-app"
 }
 
-module "cp_flannel_from_workers_db" {
+module "cp_controller_manager_from_workers_app" {
   source                   = "../../modules/security_group_rule"
   type                     = "ingress"
-  from_port                = 8472
-  to_port                  = 8472
-  protocol                 = "udp"
+  from_port                = 10257
+  to_port                  = 10257
+  protocol                 = "tcp"
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Controller manager metrics from workers"
+}
+
+module "cp_scheduler_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10259
+  to_port                  = 10259
+  protocol                 = "tcp"
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Scheduler metrics from app workers"
+}
+
+module "cp_kube_proxy_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10249
+  to_port                  = 10249
+  protocol                 = "tcp"
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kube proxy metrics app workers"
+}
+
+module "cp_kube_proxy_from_workers_db" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10249
+  to_port                  = 10249
+  protocol                 = "tcp"
   security_group_id        = module.cp_sg.sg_id
   source_security_group_id = module.workers_db_sg.sg_id
-  description              = "Flannel from workers-db"
+  description              = "Kube proxy metrics db workers"
+}
+
+module "cp_etcd_exporter_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 2381
+  to_port                  = 2381
+  protocol                 = "tcp"
+  security_group_id        = module.cp_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Etcd exporter metrics from app workers"
 }
 
 # Workers-app
@@ -451,6 +495,17 @@ module "workers_app_kubelet_from_cp" {
   security_group_id        = module.workers_app_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
+}
+
+module "workers_app_kubelet_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10250
+  to_port                  = 10250
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kubelet from workers-app"
 }
 
 module "workers_app_node_exporter_from_cp" {
@@ -552,6 +607,61 @@ module "workers_app_flannel_from_workers_db" {
   description              = "Flannel from workers-db"
 }
 
+module "workers_app_controller_manager_from_cp" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10257
+  to_port                  = 10257
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
+  description              = "Controller manager metrics from control plane"
+}
+
+module "workers_app_scheduler_from_cp" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10259
+  to_port                  = 10259
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
+  description              = "Scheduler metrics from control plane"
+}
+
+module "workers_app_kube_proxy_from_cp" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10249
+  to_port                  = 10249
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
+  description              = "Kube proxy metrics from control plane"
+}
+
+module "workers_app_etcd_exporter_from_cp" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 2381
+  to_port                  = 2381
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
+  description              = "Etcd exporter metrics from control plane"
+}
+
+module "workers_app_postgres_exporter_from_workers_db" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 9187
+  to_port                  = 9187
+  protocol                 = "tcp"
+  security_group_id        = module.workers_app_sg.sg_id
+  source_security_group_id = module.workers_db_sg.sg_id
+  description              = "Postgres exporter metrics from app workers"
+}
+
 # Database
 module "workers_db_sg" {
   source        = "../../modules/security_group"
@@ -588,6 +698,17 @@ module "workers_db_kubelet_from_cp" {
   security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.cp_sg.sg_id
   description              = "Kubelet from control plane"
+}
+
+module "workers_db_kubelet_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10250
+  to_port                  = 10250
+  protocol                 = "tcp"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kubelet from workers-app"
 }
 
 module "workers_db_node_exporter_from_workers_app" {
@@ -665,6 +786,28 @@ module "workers_db_flannel_from_workers_db" {
   security_group_id        = module.workers_db_sg.sg_id
   source_security_group_id = module.workers_db_sg.sg_id
   description              = "Flannel from workers-db"
+}
+
+module "workers_db_kube_proxy_from_cp" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10249
+  to_port                  = 10249
+  protocol                 = "tcp"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.cp_sg.sg_id
+  description              = "Kube proxy metrics from control plane"
+}
+
+module "workers_db_kube_proxy_from_workers_app" {
+  source                   = "../../modules/security_group_rule"
+  type                     = "ingress"
+  from_port                = 10249
+  to_port                  = 10249
+  protocol                 = "tcp"
+  security_group_id        = module.workers_db_sg.sg_id
+  source_security_group_id = module.workers_app_sg.sg_id
+  description              = "Kube proxy metrics from app workers"
 }
 
 ###########################
