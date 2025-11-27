@@ -205,20 +205,6 @@ ALTER TABLE ONLY public."User" ALTER COLUMN id SET DEFAULT nextval('public."User
 
 
 --
--- Data for Name: Borrow; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public."Borrow" (id, "userId", "gameId", "createdAt", deadline, returned, "lastModified") FROM stdin;
-1	1	8	2025-07-18 10:23:19.063	2025-08-17 10:23:19.054	f	2025-07-18 10:23:19.063
-2	1	10	2025-07-18 10:23:35.982	2025-08-17 10:23:35.981	f	2025-07-18 10:23:35.982
-3	1	6	2025-07-18 10:23:42.348	2025-08-17 10:23:42.347	f	2025-07-18 10:23:42.348
-4	1	15	2025-07-18 10:23:48.441	2025-08-17 10:23:48.441	f	2025-07-18 10:23:48.441
-5	1	23	2025-07-18 10:24:00.716	2025-08-17 10:24:00.715	f	2025-07-18 10:24:00.716
-6	1	4	2025-07-23 13:01:32.819	2025-08-22 13:01:32.818	f	2025-07-23 13:01:32.819
-\.
-
-
---
 -- Data for Name: Game; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -323,15 +309,6 @@ COPY public."Game" (id, name, category, age, players, quantity, "imageSrc", "tag
 100	Buildmag bridge	build	8+	1+	5	buildmag_bridge.jpg	Engineer your own magnetic bridge across imaginary landscapes.	This Buildmag kit challenges builders to design sturdy bridges using magnetic tiles and supports. Promotes creativity, physics thinking, and fine motor skills. Ideal for solo or team projects, it inspires budding engineers and planners.	2025-07-18 10:21:35.891	2025-07-18 10:21:35.891
 8	Xweird draughts	board	10+	2	0	xweird_draughts.jpg	Classic checkers twisted with strange rules and warped strategies.	This mind-bending twist on traditional checkers introduces unpredictable movements, special tiles, and new win conditions. Designed for seasoned board gamers and strategic thinkers, Xweird Draughts will challenge your expectations and test your adaptability in every match.	2025-07-18 10:21:35.891	2025-07-18 10:23:19.083
 23	Buildmag skyscraper	build	8+	1+	0	buildmag_skyscraper.jpg	Design and construct towering skyscrapers with magnetic precision pieces.	This hands-on building set challenges players to create vertical marvels using magnetic blocks and structural accessories. Encourages creativity, STEM learning, and patience. Ideal for solo or collaborative projects, the Buildmag Skyscraper kit turns playtime into an architectural journey.	2025-07-18 10:21:35.891	2025-07-18 10:24:00.719
-\.
-
-
---
--- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public."User" (id, "firstName", "lastName", "birthDate", country, "postalCode", street, number, phone, email, password, role, "createdAt", "lastModified") FROM stdin;
-1	Kevin	Maouchi	2025-07-26 00:00:00	France	76650	Frederic Chopin	8	+33649174805	maouchi76@hotmail.fr	$2b$10$jtowmpac.8gFqoCvBtSm/.rpYBRxBvsML2Iv4nuXbNBvj5jbkl5Uy	member	2025-07-18 10:22:48.802	2025-07-18 10:22:48.802
 \.
 
 

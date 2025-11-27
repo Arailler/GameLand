@@ -7,8 +7,8 @@ metadata:
 ---
 apiVersion: v1
 data:
-  POSTGRES_DB: Z2FtZWxhbmQ=
-  POSTGRES_PASSWORD: cG9zdGdyZXM=
+  POSTGRES_DB: <BASE_64_ENCODED_DATABASE>
+  POSTGRES_PASSWORD: <BASE_64_ENCODED_PASSWORD>
 kind: Secret
 metadata:
   name: postgres-secret
