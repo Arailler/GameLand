@@ -34,10 +34,12 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: Setup SSH key
+      - name: Setup SSH keys
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.GAMELAND_SSH_KEY }}" > ~/.ssh/id_rsa_gameland
+          echo "${{ secrets.GAMELAND_SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa_gameland.pub
+          chmod 600 ~/.ssh/id_rsa_gameland.pub
+          echo "${{ secrets.GAMELAND_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_gameland
           chmod 600 ~/.ssh/id_rsa_gameland
 
       - name: Terraform Init / Apply
