@@ -45,6 +45,8 @@ jobs:
           printf "[profile terraform]\nregion = %s\noutput = json\n" "${{ env.AWS_REGION }}" > ~/.aws/config
           printf "[terraform]\naws_access_key_id = %s\naws_secret_access_key = %s\n" \
             "${{ secrets.AWS_ACCESS_KEY_ID }}" "${{ secrets.AWS_SECRET_ACCESS_KEY }}" > ~/.aws/credentials
+          cat ~/.aws/config
+          cat ~/.aws/credentials
           
       - name: Terraform Init / Apply
         run: |
