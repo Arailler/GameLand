@@ -41,18 +41,19 @@ jobs:
 
       - name: Setup AWS config and credentials files
         run: |
-           cat <<EOF > ~/.aws/config
-            [profile terraform]
-            region = ${{ env.AWS_REGION }}
+          mkdir -p ~/.aws
 
-            output = json
-            EOF
+          cat <<EOF > ~/.aws/config
+      [profile terraform]
+      region = ${{ env.AWS_REGION }}
+      output = json
+      EOF
 
-            cat <<EOF > ~/.aws/credentials
-            [terraform]
-            aws_access_key_id =  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws_secret_access_key =  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            EOF
+          cat <<EOF > ~/.aws/credentials
+      [terraform]
+      aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      EOF
           
       - name: Terraform Init / Apply
         run: |
