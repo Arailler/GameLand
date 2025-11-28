@@ -12,6 +12,11 @@ on:
           - k8s
           - eks
           - ecs
+env:
+  KUBERNETES_TYPE: ${{ inputs.KUBERNETES_TYPE }}
+  AWS_REGION: ${{ env.AWS_REGION }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   deploy:
@@ -42,15 +47,15 @@ jobs:
       - name: Setup AWS config and credentials files
         run: |
           mkdir -p ~/.aws
-          printf "[profile terraform]\nregion = %s\noutput = json\n" "${{ env.AWS_REGION }}" > ~/.aws/config
+          printf "[profile terraform]\nregion = %s\noutput = json\n" "$AWS_REGION" > ~/.aws/config
           printf "[terraform]\naws_access_key_id = %s\naws_secret_access_key = %s\n" \
-            "${{ secrets.AWS_ACCESS_KEY_ID }}" "${{ secrets.AWS_SECRET_ACCESS_KEY }}" > ~/.aws/credentials
+            "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > ~/.aws/credentials
           cat ~/.aws/config
           cat ~/.aws/credentials
           
       - name: Terraform Init / Apply
         run: |
-          cd infrastructure/terraform/environments/${{ inputs.KUBERNETES_TYPE }}/
+          cd infrastructure/terraform/environments/$KUBERNETES_TYPE/
           terraform fmt
           terraform init
           terraform apply -auto-approve
@@ -58,7 +63,7 @@ jobs:
 
       - name: Generate SSH config & Ansible inventory
         run: |
-          cd infrastructure/terraform/environments/${{ inputs.KUBERNETES_TYPE }}/
+          cd infrastructure/terraform/environments/$KUBERNETES_TYPE/
 
           BASTION_IP=$(terraform output -json bastion_public_ips | jq -r '.[0]')
 
