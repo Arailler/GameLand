@@ -46,9 +46,14 @@ jobs:
       - name: Setup AWS config and credentials files
         run: |
           mkdir -p ~/.aws
-          printf "[profile terraform]\nregion = %s\noutput = json\n" "$AWS_REGION" > ~/.aws/config
-          printf "[terraform]\naws_access_key_id = %s\naws_secret_access_key = %s\n" \
-            "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > ~/.aws/credentials
+          echo "[profile terraform]" > ~/.aws/config
+          echo "region = $AWS_REGION" >> ~/.aws/config
+          echo "output = json" >> ~/.aws/config
+
+          echo "[terraform]" > ~/.aws/credentials
+          echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+          echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+          
           cat ~/.aws/config
           cat ~/.aws/credentials
           
