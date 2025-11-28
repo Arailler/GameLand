@@ -1,0 +1,114 @@
+name: Provision GameLand Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      KUBERNETES_TYPE:
+        description: "Kubernetes type"
+        required: true
+        type: choice
+        options:
+          - k3s
+          - k8s
+          - eks
+          - ecs
+
+env:
+  KUBERNETES_TYPE: ${{ inputs.KUBERNETES_TYPE }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip openssh-client
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GAMELAND_SSH_KEY }}" > ~/.ssh/id_rsa_gameland
+          chmod 600 ~/.ssh/id_rsa_gameland
+
+      - name: Terraform Init / Apply
+        run: |
+          cd infrastructure/terraform/environments/${KUBERNETES_TYPE}/
+          terraform fmt
+          terraform init
+          terraform apply -auto-approve
+          terraform refresh
+
+      - name: Generate SSH config & Ansible inventory
+        run: |
+          cd infrastructure/terraform/environments/${KUBERNETES_TYPE}/
+
+          BASTION_IP=$(terraform output -json bastion_public_ips | jq -r '.[0]')
+
+          cat <<EOF > ~/.ssh/config
+          Host bastion_host
+            HostName $BASTION_IP
+            User admin
+            IdentityFile ~/.ssh/id_rsa_gameland
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+
+          CONTROL_PLANE_IPS=($(terraform output -json cp_private_ips | jq -r '.[]'))
+          WORKERS_APP_IPS=($(terraform output -json workers_app_private_ips | jq -r '.[]'))
+          WORKERS_DB_IPS=($(terraform output -json workers_db_private_ips | jq -r '.[]'))
+
+          OUTPUT_FILE="../../../ansible/inventories/k8s/hosts.yaml"
+
+          cat > "$OUTPUT_FILE" <<EOF
+          all:
+            children:
+              bastion:
+                hosts:
+                  bastion_host:
+                    ansible_host: ${BASTION_IP}
+              ${KUBERNETES_TYPE}:
+                children:
+                  control_plane:
+                    hosts:
+          EOF
+
+          i=1
+          for ip in "${CONTROL_PLANE_IPS[@]}"; do
+            echo "            cp-$i:" >> "$OUTPUT_FILE"
+            echo "              ansible_host: $ip" >> "$OUTPUT_FILE"
+            ((i++))
+          done
+
+          echo "        workers_app:" >> "$OUTPUT_FILE"
+          echo "          hosts:" >> "$OUTPUT_FILE"
+          i=1
+          for ip in "${WORKERS_APP_IPS[@]}"; do
+            echo "            app-$i:" >> "$OUTPUT_FILE"
+            echo "              ansible_host: $ip" >> "$OUTPUT_FILE"
+            ((i++))
+          done
+
+          echo "        workers_db:" >> "$OUTPUT_FILE"
+          echo "          hosts:" >> "$OUTPUT_FILE"
+          i=1
+          for ip in "${WORKERS_DB_IPS[@]}"; do
+            echo "            db-$i:" >> "$OUTPUT_FILE"
+            echo "              ansible_host: $ip" >> "$OUTPUT_FILE"
+            ((i++))
+          done
+
+      - name: Upload inventory as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-inventory
+          path: ansible/inventories/k8s/hosts.yaml
