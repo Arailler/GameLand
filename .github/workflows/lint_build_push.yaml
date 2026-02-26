@@ -21,7 +21,7 @@ jobs:
 
     env:
       IMAGE_NAME: gameland
-      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+      HUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/gameland
       NODE_VERSION: 22
 
     steps:
@@ -42,7 +42,7 @@ jobs:
         run: npm run lint
 
       - name: Extract version from PR title, bump it and extract new tag
-        id: version
+        id: get_tag
         run: |
           TITLE="${{ github.event.pull_request.title }}"
           BUMP="patch"
@@ -58,20 +58,20 @@ jobs:
           context: gameland
           push: false
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}
 
       - name: Minify Docker image with docker-slim
         uses: kitabisa/docker-slim-action@v1
         env:
           DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
         with:
-          target: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-          tag: ${{ steps.tag.outputs.tag }}-slim
+          target: ${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}
+          tag: ${{ steps.get_tag.outputs.tag }}-slim
 
       - name: Tag slim image as version and latest
         run: |
-          docker tag ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-          docker tag ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}
+          docker tag ${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}-slim ${{ env.HUB_IMAGE_NAME }}:latest
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -81,14 +81,13 @@ jobs:
 
       - name: Push Docker images
         run: |
-          docker push ${{ env.HUB_IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          docker push ${{ env.HUB_IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}
           docker push ${{ env.HUB_IMAGE_NAME }}:latest
 
       - name: Commit bumped version
-        working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git commit -m "chore(release): bump version to ${{ steps.version.outputs.tag }} [skip ci]"
+          git commit -m "chore(release): bump version to ${{ steps.get_tag.outputs.tag }} [skip ci]"
           git push
