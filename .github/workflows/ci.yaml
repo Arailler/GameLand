@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+defaults:
+  run:
+    working-directory: gameland    
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -20,15 +24,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: gameland
-
 
       - name: Run linter
         run: npm run lint
-        working-directory: gameland
-
 
       - name: Build the project
         run: npm run build
-        working-directory: gameland
-
