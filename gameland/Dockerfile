@@ -15,7 +15,7 @@ RUN npm ci
 # ---------- Build layer ----------
 FROM deps AS builder
 COPY . .
-RUN npx prisma generate && \
+RUN DATABASE_URL="postgres://<user>:<password>@<host>:<port>/<database>" npx prisma generate && \
     npm run build
 
 # ---------- Runner layer ----------
