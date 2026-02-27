@@ -35,6 +35,9 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Prune dev dependencies
+        run: npm prune --production
+
       - name: Build the project
         run: npm run build
 
