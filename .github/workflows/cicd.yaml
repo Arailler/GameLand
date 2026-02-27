@@ -1,9 +1,9 @@
-name: GameLand Unified Pipeline
+name: GameLand CICD
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 defaults:
@@ -11,60 +11,67 @@ defaults:
     working-directory: gameland
 
 jobs:
-  validate:
+  build:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.get_tag.outputs.tag }}
+    environment: Production
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: gameland/package-lock.json
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Get Version
-        id: get_tag
-        run: echo "tag=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+      - name: Generate Prisma client
+        run: npx prisma generate
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-assets
-          path: gameland/.next
-          retention-days: 1
+      - name: Run linter
+        run: npm run lint
 
-  deploy:
-    needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-assets
-          path: gameland/.next
+      - name: Build the project
+        run: npm run build
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push Docker
+      
+      - name: Build temporary image
         uses: docker/build-push-action@v5
         with:
           context: gameland
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ needs.validate.outputs.tag }}
-            
+          push: false
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+
+      - name: Minify Docker image with docker-slim
+        uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
+        with:
+          target: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+          tag: "${{ github.sha }}-slim"
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Promote image to latest
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
