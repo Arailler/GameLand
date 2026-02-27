@@ -38,7 +38,7 @@ jobs:
       - name: Build the project
         run: npm run build
 
-      - name: Test Docker build
+      - name: Test Docker image build
         uses: docker/build-push-action@v5
         with:
           context: gameland
@@ -61,7 +61,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build temporary image
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Build the project
+        run: npm run build
+
+      - name: Build temporary Docker image
         uses: docker/build-push-action@v5
         with:
           context: gameland
@@ -76,7 +88,7 @@ jobs:
           target: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.ref_name }}
           tag: "${{ github.ref_name }}-slim"
 
-      - name: Push Slim Image
+      - name: Push slim Image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.ref_name }}-slim
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.ref_name }}-slim ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
