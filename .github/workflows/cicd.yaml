@@ -11,6 +11,9 @@ jobs:
   validate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gameland
     environment: Production
     steps:
       - name: Checkout code
@@ -78,4 +81,3 @@ jobs:
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.ref_name }}-slim
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.ref_name }}-slim ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
-          
