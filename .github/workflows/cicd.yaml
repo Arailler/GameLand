@@ -43,20 +43,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - name: Build temporary image
+      - name: Build and push temporary image
         uses: docker/build-push-action@v5
         with:
           context: gameland
-          push: false
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
-
-      - name: Minify Docker image with docker-slim
-        uses: kitabisa/docker-slim-action@v1
-        env:
-          DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
-        with:
-          target: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
-          tag: "${{ github.sha }}-slim"
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -74,6 +66,6 @@ jobs:
 
       - name: Promote image to latest
         run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
