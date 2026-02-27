@@ -57,7 +57,7 @@ jobs:
           DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
         with:
           target: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
-          tag: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+          tag: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -72,6 +72,6 @@ jobs:
 
       - name: Promote image to latest
         run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}-slim
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
