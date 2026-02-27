@@ -74,7 +74,7 @@ This repository was created to:
 
 ## 🌐 Vercel Deployment
 
-If you're only interested in seeing what the application looks like and how it behaves, you can find it online at: **[https://gameland-ten.vercel.app/]**
+If you're only interested in seeing what the application looks like and how it behaves, you can find it online at: **https://gameland-ten.vercel.app/**
 
 ---
 
