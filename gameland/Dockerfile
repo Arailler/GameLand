@@ -7,7 +7,6 @@ RUN apt-get update && \
 
 # ---------- Runner layer ----------
 FROM base AS runner
-
 RUN addgroup --system gameland && adduser --system --ingroup gameland gameland
 
 COPY package.json package-lock.json ./
