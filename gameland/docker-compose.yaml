@@ -1,6 +1,6 @@
 services:
   gameland:
-    image: arailler/gameland:1.0.0
+    image: arailler/gameland
     build:
       context: .
     ports:
