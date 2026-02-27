@@ -48,8 +48,16 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: gameland
-          push: true
+          push: false
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+
+      - name: Minify Docker image with docker-slim
+        uses: kitabisa/docker-slim-action@v1
+        env:
+          DSLIM_INCLUDE_PATH: /app/node_modules/next/dist/compiled/cookie,/app/public,/app/.next
+        with:
+          target: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
+          tag: ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
