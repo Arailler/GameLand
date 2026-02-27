@@ -6,6 +6,10 @@ on:
   push:
     branches: [main]
 
+defaults:
+  run:
+    working-directory: gameland
+
 jobs:
   build:
     if: github.event_name == 'pull_request'
@@ -29,6 +33,12 @@ jobs:
 
       - name: Build the project
         run: npm run build
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Build and push temporary image
         uses: docker/build-push-action@v5
@@ -52,4 +62,3 @@ jobs:
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }}
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/gameland:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/gameland:latest
-          
