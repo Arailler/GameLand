@@ -84,7 +84,7 @@ Clone the repo and configure your `.env` file using the provided `.env.example`.
 
 ```bash
 git clone git@github.com:Arailler/GameLand.git
-cd gameland
+cd GameLand/gameland
 cp .env.example .env
 ```
 
