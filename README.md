@@ -92,20 +92,27 @@ cp .env.example .env
 
 You’ll need to fill in your `.env` file with valid values. Here’s what each variable does:
 
-- `DATABASE_URL` – PostgreSQL connection string (e.g. `postgres://user:password@localhost:5432/gameland`)
+- `DATABASE_URL` – PostgreSQL connection string (e.g. `postgres://<user>:<password>@<host>:<port>/<database>`)
 - `POSTGRES_PASSWORD`, `POSTGRES_DB` – Used to initialize the PostgreSQL container
-- `GMAIL_USER`, `GMAIL_APP_PASSWORD` – Used by Nodemailer to send contact form emails. It's optional if you don't use the contact form.
 - `NEXTAUTH_SECRET` – Cryptographic key for session tokens (generate with `openssl rand -base64 32`)
 - `NEXTAUTH_URL` – Base URL of your app (e.g. `http://localhost:3000` for local dev)
+- `GMAIL_USER`, `GMAIL_APP_PASSWORD` – Used by Nodemailer to send contact form emails. It's optional if you don't use the contact form.
 
 Use the `.env.example` file as a template and **never commit** your actual `.env` to version control.
 
 ### ⚡ Quick Setup with Docker
 
-For a quick local setup using [Docker/docker-compose](https://www.docker.com/), run the following. The app will be available at [http://localhost:3000](http://localhost:3000).
+For a quick local setup using docker-compose, run the following. The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ```bash
 docker compose up -d
+```
+
+Then we fill the database with actual data like this:
+
+```bash
+cd ..
+docker exec -i gameland-postgres psql -U <user> -d <database> < infrastructure/ansible/files/sql/fill-gameland-postgres.sql
 ```
 
 ### 💻 Full Dev Experience (Hot Reload)
