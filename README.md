@@ -83,7 +83,7 @@ If you're only interested in seeing what the application looks like and how it b
 Clone the repo and configure your `.env` file using the provided `.env.example`.
 
 ```bash
-git clone https://github.com/your-username/gameland.git
+git clone git@github.com:Arailler/GameLand.git
 cd gameland
 cp .env.example .env
 ```
